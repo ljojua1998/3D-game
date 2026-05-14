@@ -1,0 +1,126 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lora&display=swap');
+
+:root {
+  --pause-z-index: 100;
+  --watermark-z-index: 101;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden; // Fixes 4px gap
+  height: 100vh;
+}
+
+#root {
+  height: 100%;
+}
+
+.watermark {
+  position: fixed;
+  width: 32px;
+  bottom: 16px;
+  right: 16px;
+  opacity: 0.1;
+  z-index: var(--watermark-z-index);
+}
+
+#pause {
+  font-family: 'Montserrat', sans-serif;
+  visibility: hidden;
+  position: fixed;
+  z-index: var(--pause-z-index);
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  color: rgba(0, 0, 0, 0.3);
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  font-size: 128px;
+  // mix-blend-mode: multiply;
+  backdrop-filter: blur(8px);
+
+  h1 {
+    margin: 0;
+  }
+
+  .subtext {
+    font-family: 'Lora', serif;
+    font-size: 32px;
+  }
+
+  &.visible {
+    visibility: visible;
+  }
+}
+
+#debug {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--watermark-z-index);
+  color: #0f0;
+  background: rgba(0, 0, 0, 0.7);
+  font-family: monospace;
+  font-size: 12px;
+  padding: 4px 8px;
+  pointer-events: none;
+}
+
+#discovered-ui {
+  position: fixed;
+  top: -150px;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--watermark-z-index);
+  width: 100vw;
+  font-size: 48px;
+  font-family: 'Montserrat';
+  color: #ffffff;
+  margin-top: 32px;
+  transition: .5s ease-in-out top;
+
+  &.visible {
+    top: 0;
+  }
+
+  .sub-text {
+    font-size: 32px;
+    color: #ffffff80;
+  }
+}
+
+#fade-to-black {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: black;
+  opacity: 0;
+  transition: 10s linear opacity;
+  transition-delay: 1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-family: 'Montserrat';
+  font-size: 32px;
+
+  &.show {
+    opacity: 1;
+  }
+}

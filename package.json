@@ -1,0 +1,99 @@
+{
+  "name": "algernon",
+  "author": "excalo",
+  "version": "0.0.2",
+  "description": "An infinite maze",
+  "private": true,
+  "license": "UNLICENSED",
+  "main": "src/electron.js",
+  "homepage": "./",
+  "scripts": {
+    "start": "react-scripts start",
+    "dev": "nf start",
+    "electron": "electron .",
+    "build": "react-scripts build",
+    "make": "npm run build && electron-forge make",
+    "package": "npm run build && electron-forge package",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "import-gltf": "npx gltfjsx public/models/early-game.glb -t -r public"
+  },
+  "dependencies": {
+    "@react-three/cannon": "^6.6.0",
+    "@react-three/drei": "^9.114.0",
+    "@react-three/fiber": "^8.17.10",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.0.1",
+    "@testing-library/user-event": "^14.5.2",
+    "cannon-es": "^0.20.0",
+    "electron-squirrel-startup": "^1.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-scripts": "5.0.1",
+    "sass": "^1.80.6",
+    "three": "^0.169.0",
+    "typescript": "^4.9.5",
+    "web-vitals": "^4.2.4"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.5.0",
+    "@electron-forge/maker-deb": "^7.5.0",
+    "@electron-forge/maker-rpm": "^7.5.0",
+    "@electron-forge/maker-squirrel": "^7.5.0",
+    "@electron-forge/maker-zip": "^7.5.0",
+    "@types/jest": "^30.0.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/three": "^0.169.0",
+    "ajv": "^8.20.0",
+    "electron": "^33.0.2",
+    "foreman": "^3.0.1"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "config": {
+    "forge": {
+      "packagerConfig": {
+        "asar": true
+      },
+      "makers": [
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "config": {
+            "name": "algernon"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-zip",
+          "platforms": [
+            "darwin"
+          ]
+        },
+        {
+          "name": "@electron-forge/maker-deb",
+          "config": {}
+        },
+        {
+          "name": "@electron-forge/maker-rpm",
+          "config": {}
+        }
+      ]
+    }
+  }
+}
