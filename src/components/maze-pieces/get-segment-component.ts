@@ -1,6 +1,7 @@
 import React from 'react'
 import FlowerRoom from '../early-game/FlowerRoom'
 import TheEnd from '../end-game/TheEnd'
+import WinRoom from '../end-game/WinRoom'
 import NoFuture from '../no-future-no-past/NoFuture'
 import NoFutureNoPast from '../no-future-no-past/NoFutureNoPast'
 import NoPast from '../no-future-no-past/NoPast'
@@ -25,6 +26,7 @@ export default function getSegmentComponent(type: string): React.FC<any> {
     case 'deer-room': return DeerRoom
     case 'orb-room': return OrbRoom
     case 'the-end': return TheEnd
+    case 'win-room': return WinRoom
     default: throw new Error(`Unknown segment type ${type}`)
   }
 }

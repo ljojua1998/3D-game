@@ -1,7 +1,7 @@
 import { Euler, Vector3 } from 'three'
 import { getPossibleSegments, MazeConnection, MazeSegment, MazeStraightSegment } from '../maze-pieces/MazeLibrary'
 
-const MAZE_BUFFER_SIZE = 2
+const MAZE_BUFFER_SIZE = 6
 
 export type CustomSegmentGenerationFunction = (
   originConnection: MazeConnection,
@@ -12,6 +12,13 @@ export type CustomSegmentGenerationFunction = (
 export default class Infinite1DMazeSegment extends MazeSegment  {
   public curIndex = 0
   public maze: MazeSegment[] = []
+
+  /**
+   * Counts how many segments have been appended to the *forward* end of the
+   * chain (the direction the player travels). Used to decide how deep into the
+   * maze the win room should spawn.
+   */
+  public forwardSegmentCount = 0
 
   /**
    * If the segment is paused, it will remain static
@@ -77,6 +84,8 @@ export default class Infinite1DMazeSegment extends MazeSegment  {
     // and above 2 there is an additional risk of self-collision (maze looping back over itself)
 
     // The proper solution requires a modified spawning algorithm.
+
+    if (!toFront) this.forwardSegmentCount++
 
     return segment
   }

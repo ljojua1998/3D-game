@@ -358,7 +358,7 @@ export default function GameDirector(props: any) {
       petal.hasBeenSeen = true
       setDeadEnds(deadEnds + 1)
       if (deadEnds < 2) return
-  
+
       petal.customSegmentGenerationFunction = spawnNoFutureNoPast
       petal.paused = false
       setStage3Complete(true)
