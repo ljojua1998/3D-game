@@ -1,8 +1,10 @@
 import { Fragment } from 'react'
 import { MazeGrid } from '../../game/MazeGenerator'
 import { Door as DoorData } from '../../game/doors'
+import { ExitGate as ExitGateData } from '../../game/exitGate'
 import Wall, { CELL_SIZE } from './Wall'
 import Door from './Door'
+import ExitGate from './ExitGate'
 import EndMarker from './EndMarker'
 
 export const cellToWorld = (x: number, y: number): [number, number, number] => [
@@ -14,10 +16,20 @@ export const cellToWorld = (x: number, y: number): [number, number, number] => [
 type Props = {
   grid: MazeGrid
   doors: DoorData[]
+  gate: ExitGateData
   nearbyDoorId: string | null
+  nearbyGate: boolean
+  hasAllLetters: boolean
 }
 
-export default function GeneratedMaze({ grid, doors, nearbyDoorId }: Props) {
+export default function GeneratedMaze({
+  grid,
+  doors,
+  gate,
+  nearbyDoorId,
+  nearbyGate,
+  hasAllLetters,
+}: Props) {
   const walls: JSX.Element[] = []
   let k = 0
   for (let y = 0; y < grid.height; y++) {
@@ -50,6 +62,7 @@ export default function GeneratedMaze({ grid, doors, nearbyDoorId }: Props) {
     <Fragment>
       {walls}
       {doors.map(d => <Door key={d.id} door={d} isNearby={nearbyDoorId === d.id} />)}
+      <ExitGate gate={gate} isNearby={nearbyGate} hasAllLetters={hasAllLetters} />
       <EndMarker position={endPos} />
     </Fragment>
   )

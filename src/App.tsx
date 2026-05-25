@@ -10,10 +10,13 @@ import MazeOverview from './components/maze/MazeOverview'
 import PasscodeHUD from './components/ui/PasscodeHUD'
 import ProximityPrompt from './components/ui/ProximityPrompt'
 import ScenarioDialog from './components/ui/ScenarioDialog'
+import PasscodeDialog from './components/ui/PasscodeDialog'
+import WinScreen from './components/ui/WinScreen'
 import { generateMaze, MazeGrid } from './game/MazeGenerator'
 import { shortestPath } from './game/pathfinding'
 import { getTurns } from './game/pathAnalysis'
 import { Door, checkAnswer, placeDoors } from './game/doors'
+import { ExitGate, computeExitGate, validatePasscode } from './game/exitGate'
 import { Scenario, SCENARIOS } from './game/scenarios'
 import { syncGameState } from './game/gameState'
 import { playerState } from './game/playerState'
@@ -24,6 +27,7 @@ import { FOG_COLOR } from './theme'
 const DOOR_COUNT = 4
 const MIN_TURNS = 3
 const PROXIMITY_RADIUS = 2.0
+const GATE_PROXIMITY_RADIUS = 2.2
 const MAX_ATTEMPTS = 3
 const COOLDOWN_MS = 5000
 
@@ -48,11 +52,12 @@ function computeDoors(grid: MazeGrid): Door[] {
 type WorldState = {
   grid: MazeGrid
   doors: Door[]
+  gate: ExitGate
 }
 
 function freshWorld(): WorldState {
   const grid = generateValidMaze()
-  return { grid, doors: computeDoors(grid) }
+  return { grid, doors: computeDoors(grid), gate: computeExitGate(grid) }
 }
 
 const SCENARIO_BY_ID = new Map(SCENARIOS.map(s => [s.id, s]))
@@ -67,14 +72,23 @@ export default function App() {
   const [minimapVisible, setMinimapVisible] = useState(false)
   const [collectedLetters, setCollectedLetters] = useState<string[]>([])
   const [nearbyDoorId, setNearbyDoorId] = useState<string | null>(null)
+  const [nearbyGate, setNearbyGate] = useState(false)
   const [openDialogDoorId, setOpenDialogDoorId] = useState<string | null>(null)
+  const [passcodeOpen, setPasscodeOpen] = useState(false)
+  const [won, setWon] = useState(false)
   const wrongAttemptsRef = useRef<Map<string, number>>(new Map())
+
+  const hasAllLetters =
+    world.doors.length > 0 && collectedLetters.length === world.doors.length
 
   const regenerate = useCallback(() => {
     setWorld(freshWorld())
     setCollectedLetters([])
     setOpenDialogDoorId(null)
     setNearbyDoorId(null)
+    setNearbyGate(false)
+    setPasscodeOpen(false)
+    setWon(false)
     wrongAttemptsRef.current = new Map()
   }, [])
 
@@ -87,8 +101,8 @@ export default function App() {
   }, [world.doors])
 
   useEffect(() => {
-    syncGameState({ doors: world.doors, collectedLetters })
-  }, [world.doors, collectedLetters])
+    syncGameState({ doors: world.doors, collectedLetters, won })
+  }, [world.doors, collectedLetters, won])
 
   useEffect(() => {
     const path = shortestPath(world.grid)
@@ -134,23 +148,37 @@ export default function App() {
       }
       setNearbyDoorId(prev => (prev === closest ? prev : closest))
 
+      const gdx = playerState.x - world.gate.position[0]
+      const gdy = playerState.y - world.gate.position[1]
+      const gateDist = Math.sqrt(gdx * gdx + gdy * gdy)
+      const near = !world.gate.unlocked && gateDist < GATE_PROXIMITY_RADIUS
+      setNearbyGate(prev => (prev === near ? prev : near))
+
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
-  }, [world.doors])
+  }, [world.doors, world.gate])
 
   useEffect(() => {
     const isInputTarget = (t: EventTarget | null) =>
       t instanceof HTMLTextAreaElement || t instanceof HTMLInputElement
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Escape' && openDialogDoorId) {
-        e.preventDefault()
-        setOpenDialogDoorId(null)
-        return
+      if (e.code === 'Escape') {
+        if (openDialogDoorId) {
+          e.preventDefault()
+          setOpenDialogDoorId(null)
+          return
+        }
+        if (passcodeOpen) {
+          e.preventDefault()
+          setPasscodeOpen(false)
+          return
+        }
       }
       if (isInputTarget(e.target)) return
+      if (won) return
 
       if (e.code === 'KeyM') {
         setMinimapVisible(v => !v)
@@ -159,13 +187,13 @@ export default function App() {
       } else if (e.code === 'KeyU' && e.shiftKey) {
         devUnlockAll()
       } else if (e.code === 'KeyT') {
-        if (openDialogDoorId || !nearbyDoorId) return
+        if (openDialogDoorId || passcodeOpen || !nearbyDoorId) return
         const d = world.doors.find(x => x.id === nearbyDoorId)
         if (!d || d.status !== 'locked') return
         if (document.pointerLockElement === document.body) document.exitPointerLock()
         setOpenDialogDoorId(nearbyDoorId)
       } else if (e.code === 'KeyU' && !e.shiftKey) {
-        if (openDialogDoorId || !nearbyDoorId) return
+        if (openDialogDoorId || passcodeOpen || !nearbyDoorId) return
         const d = world.doors.find(x => x.id === nearbyDoorId)
         if (!d || d.status !== 'answered') return
         setWorld(w => ({
@@ -175,11 +203,27 @@ export default function App() {
           ),
         }))
         setCollectedLetters(prev => [...prev, d.letter])
+      } else if (e.code === 'KeyE') {
+        if (openDialogDoorId || passcodeOpen) return
+        if (!nearbyGate || !hasAllLetters || world.gate.unlocked) return
+        if (document.pointerLockElement === document.body) document.exitPointerLock()
+        setPasscodeOpen(true)
       }
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [regenerate, devUnlockAll, nearbyDoorId, openDialogDoorId, world.doors])
+  }, [
+    regenerate,
+    devUnlockAll,
+    nearbyDoorId,
+    openDialogDoorId,
+    passcodeOpen,
+    nearbyGate,
+    hasAllLetters,
+    world.doors,
+    world.gate.unlocked,
+    won,
+  ])
 
   const openDoor = openDialogDoorId
     ? world.doors.find(d => d.id === openDialogDoorId) ?? null
@@ -228,16 +272,37 @@ export default function App() {
 
   const closeDialog = useCallback(() => setOpenDialogDoorId(null), [])
 
+  const handlePasscodeSubmit = useCallback(
+    (input: string): boolean => {
+      const ok = validatePasscode(input, collectedLetters)
+      if (!ok) return false
+      setWorld(w => ({ ...w, gate: { ...w.gate, unlocked: true } }))
+      setPasscodeOpen(false)
+      setWon(true)
+      return true
+    },
+    [collectedLetters],
+  )
+
+  const closePasscode = useCallback(() => setPasscodeOpen(false), [])
+
   const nearbyDoor = nearbyDoorId
     ? world.doors.find(d => d.id === nearbyDoorId) ?? null
     : null
-  const promptStatus = nearbyDoor && !openDialogDoorId
+  const promptStatus = nearbyDoor && !openDialogDoorId && !passcodeOpen
     ? nearbyDoor.status === 'locked' ||
       nearbyDoor.status === 'answered' ||
       nearbyDoor.status === 'cooldown'
       ? nearbyDoor.status
       : null
     : null
+
+  const gatePromptKind: 'ready' | 'locked' | null =
+    nearbyGate && !passcodeOpen && !openDialogDoorId
+      ? hasAllLetters
+        ? 'ready'
+        : 'locked'
+      : null
 
   return (
     <>
@@ -255,7 +320,14 @@ export default function App() {
         <Skydome />
         <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade />
         <Physics gravity={[0, 0, -25]} defaultContactMaterial={contactMaterial}>
-          <PhysicsWorld grid={world.grid} doors={world.doors} nearbyDoorId={nearbyDoorId} />
+          <PhysicsWorld
+            grid={world.grid}
+            doors={world.doors}
+            gate={world.gate}
+            nearbyDoorId={nearbyDoorId}
+            nearbyGate={nearbyGate}
+            hasAllLetters={hasAllLetters}
+          />
         </Physics>
       </Canvas>
       <PasscodeHUD totalSlots={world.doors.length} collected={collectedLetters} />
@@ -263,6 +335,7 @@ export default function App() {
         status={promptStatus}
         cooldownUntil={nearbyDoor?.cooldownUntil}
         letter={nearbyDoor?.letter}
+        gateKind={gatePromptKind}
       />
       {minimapVisible && (
         <MazeOverview grid={world.grid} doors={world.doors} onRegenerate={regenerate} />
@@ -276,6 +349,20 @@ export default function App() {
           onClose={closeDialog}
         />
       )}
+      {passcodeOpen && (
+        <PasscodeDialog
+          collected={collectedLetters}
+          onSubmit={handlePasscodeSubmit}
+          onClose={closePasscode}
+        />
+      )}
+      {won && (
+        <WinScreen
+          passcode={collectedLetters.join(' ')}
+          doorsUnlocked={world.doors.filter(d => d.status === 'unlocked').length}
+          onRestart={regenerate}
+        />
+      )}
     </>
   )
 }
@@ -283,11 +370,17 @@ export default function App() {
 export function PhysicsWorld({
   grid,
   doors,
+  gate,
   nearbyDoorId,
+  nearbyGate,
+  hasAllLetters,
 }: {
   grid: MazeGrid
   doors: Door[]
+  gate: ExitGate
   nearbyDoorId: string | null
+  nearbyGate: boolean
+  hasAllLetters: boolean
 }) {
   const setPaused = (paused: boolean) => {
     if (paused) document.getElementById('pause')!.classList.add('visible')
@@ -300,7 +393,14 @@ export function PhysicsWorld({
     <Suspense fallback={null}>
       <GroundPlane />
       <FPSControls position={spawn} rotation={[Math.PI / 2, 0, 0]} setPaused={setPaused} />
-      <PromptMazeDirector grid={grid} doors={doors} nearbyDoorId={nearbyDoorId} />
+      <PromptMazeDirector
+        grid={grid}
+        doors={doors}
+        gate={gate}
+        nearbyDoorId={nearbyDoorId}
+        nearbyGate={nearbyGate}
+        hasAllLetters={hasAllLetters}
+      />
     </Suspense>
   )
 }
