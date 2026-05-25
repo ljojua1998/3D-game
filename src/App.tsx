@@ -2,7 +2,7 @@ import { Physics } from '@react-three/cannon'
 import { Stars } from '@react-three/drei'
 import React, { Suspense } from 'react'
 import { Canvas } from '@react-three/fiber'
-import GameDirector from './components/GameDirector'
+import PromptMazeDirector from './components/PromptMazeDirector'
 import FPSControls from './components/three/FPSControls'
 import GroundPlane from './components/three/GroundPlane'
 import Skydome from './components/three/Skydome'
@@ -55,12 +55,12 @@ export function PhysicsWorld() {
   }
   setPaused(document.pointerLockElement !== document.body)
 
-  const spawn: [number, number, number] = [8, 0, 1]
+  const spawn: [number, number, number] = [0, 0, 1]
   return (
     <Suspense fallback={null}>
       <GroundPlane/>
-      <FPSControls position={spawn} rotation={[Math.PI/2, 0, -Math.PI/2]} setPaused={setPaused} />
-      <GameDirector />
+      <FPSControls position={spawn} rotation={[Math.PI/2, 0, 0]} setPaused={setPaused} />
+      <PromptMazeDirector />
     </Suspense>
   )
 }

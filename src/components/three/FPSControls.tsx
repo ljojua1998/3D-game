@@ -6,7 +6,7 @@ import { DEBUG_POSITION } from '../../config'
 
 const PLAYER_HEIGHT = 1
 const PLAYER_RADIUS = 0.35
-const MOUSE_SENSITIVITY = 10
+const MOUSE_SENSITIVITY = 500
 
 type FPSControlsProps = {
   setPaused: any,
