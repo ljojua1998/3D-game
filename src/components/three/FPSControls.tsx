@@ -3,10 +3,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Mesh, Vector3 } from 'three'
 import { DEBUG_POSITION } from '../../config'
+import { playerState } from '../../game/playerState'
 
 const PLAYER_HEIGHT = 1
 const PLAYER_RADIUS = 0.35
-const MOUSE_SENSITIVITY = 1000
+const MOUSE_SENSITIVITY = 500
 
 type FPSControlsProps = {
   setPaused: any,
@@ -54,10 +55,6 @@ export default function FPSControls(props: FPSControlsProps) {
       if (event.code === 'Escape' && document.pointerLockElement === document.body) {
         props.setPaused(true)
         document.exitPointerLock()
-      }
-      else if (event.code === 'KeyR') {
-        console.log('Hackermode enabled')
-        cylinderBody.position.set(91, 56, 0)
       }
     }
     const onKeyup = (event: KeyboardEvent) => keyStates[event.code] = false
@@ -112,6 +109,11 @@ export default function FPSControls(props: FPSControlsProps) {
   useFrame(() => {
     const [px, py, pz] = bodyPosition.current
     camera.position.set(px, py, pz + PLAYER_HEIGHT/2)
+
+    playerState.x = px
+    playerState.y = py
+    playerState.z = pz
+    playerState.yawZ = camera.rotation.z
 
     const inputVelocity = new Vector3()
     let MOVESPEED = 5
