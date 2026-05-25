@@ -5,8 +5,9 @@ import GeneratedMaze from './maze/GeneratedMaze'
 type Props = {
   grid: MazeGrid
   doors: Door[]
+  nearbyDoorId: string | null
 }
 
-export default function PromptMazeDirector({ grid, doors }: Props) {
-  return <GeneratedMaze grid={grid} doors={doors} />
+export default function PromptMazeDirector({ grid, doors, nearbyDoorId }: Props) {
+  return <GeneratedMaze grid={grid} doors={doors} nearbyDoorId={nearbyDoorId} />
 }

@@ -49,7 +49,11 @@ export default function FPSControls(props: FPSControlsProps) {
     camera.rotation.y = 0
     camera.rotation.z = props.rotation ? props.rotation[2] : 0
 
+    const isInputTarget = (t: EventTarget | null) =>
+      t instanceof HTMLTextAreaElement || t instanceof HTMLInputElement
+
     const onKeydown = (event: KeyboardEvent) => {
+      if (isInputTarget(event.target)) return
       keyStates[event.code] = true
 
       if (event.code === 'Escape' && document.pointerLockElement === document.body) {
@@ -57,7 +61,10 @@ export default function FPSControls(props: FPSControlsProps) {
         document.exitPointerLock()
       }
     }
-    const onKeyup = (event: KeyboardEvent) => keyStates[event.code] = false
+    const onKeyup = (event: KeyboardEvent) => {
+      if (isInputTarget(event.target)) return
+      keyStates[event.code] = false
+    }
     const onMousedown = () => {
       if (document.pointerLockElement === document.body) return
       const req = document.body.requestPointerLock() as unknown as Promise<void> | undefined

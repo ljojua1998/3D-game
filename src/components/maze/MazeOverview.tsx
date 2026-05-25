@@ -74,7 +74,7 @@ export default function MazeOverview({ grid, doors, onRegenerate }: Props) {
     const dx = (d.position[0] / CELL_SIZE + 0.5) * PX
     const dy = h - (d.position[1] / CELL_SIZE + 0.5) * PX
     const half = PX * 0.42
-    const cls = d.state === 'locked' ? 'maze-minimap__door--locked' : 'maze-minimap__door--unlocked'
+    const cls = `maze-minimap__door--${d.status}`
     if (d.orientation === 'horizontal') {
       return (
         <line
@@ -152,7 +152,7 @@ export default function MazeOverview({ grid, doors, onRegenerate }: Props) {
           cell ({cellX}, {cellY})
         </span>
         <span>
-          doors <b>{doors.filter(d => d.state === 'locked').length}</b>/{doors.length}
+          doors <b>{doors.filter(d => d.status !== 'unlocked').length}</b>/{doors.length}
         </span>
       </div>
       <div className="maze-minimap__keys">
@@ -163,10 +163,10 @@ export default function MazeOverview({ grid, doors, onRegenerate }: Props) {
           <kbd>G</kbd> new maze
         </span>
         <span>
-          <kbd>U</kbd> toggle doors
+          <kbd>T</kbd>/<kbd>U</kbd> talk/open
         </span>
         <span>
-          <kbd>WASD</kbd> move
+          <kbd>⇧U</kbd> dev unlock
         </span>
       </div>
       <div className="maze-minimap__legend">
@@ -180,13 +180,13 @@ export default function MazeOverview({ grid, doors, onRegenerate }: Props) {
           <span className="maze-minimap__swatch maze-minimap__swatch--player" /> you
         </span>
         <span>
-          <span className="maze-minimap__swatch maze-minimap__swatch--path" /> path
-        </span>
-        <span>
-          <span className="maze-minimap__swatch maze-minimap__swatch--turn" /> turn
-        </span>
-        <span>
           <span className="maze-minimap__swatch maze-minimap__swatch--door-locked" /> locked
+        </span>
+        <span>
+          <span className="maze-minimap__swatch maze-minimap__swatch--door-cooldown" /> cooldown
+        </span>
+        <span>
+          <span className="maze-minimap__swatch maze-minimap__swatch--door-answered" /> answered
         </span>
         <span>
           <span className="maze-minimap__swatch maze-minimap__swatch--door-unlocked" /> open

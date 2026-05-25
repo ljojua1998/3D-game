@@ -14,9 +14,10 @@ export const cellToWorld = (x: number, y: number): [number, number, number] => [
 type Props = {
   grid: MazeGrid
   doors: DoorData[]
+  nearbyDoorId: string | null
 }
 
-export default function GeneratedMaze({ grid, doors }: Props) {
+export default function GeneratedMaze({ grid, doors, nearbyDoorId }: Props) {
   const walls: JSX.Element[] = []
   let k = 0
   for (let y = 0; y < grid.height; y++) {
@@ -48,7 +49,7 @@ export default function GeneratedMaze({ grid, doors }: Props) {
   return (
     <Fragment>
       {walls}
-      {doors.map(d => <Door key={d.id} door={d} />)}
+      {doors.map(d => <Door key={d.id} door={d} isNearby={nearbyDoorId === d.id} />)}
       <EndMarker position={endPos} />
     </Fragment>
   )
