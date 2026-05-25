@@ -650,6 +650,54 @@ body {
   }
 }
 
+.run-stats-hud {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: var(--hud-z-index);
+  background: rgba(8, 10, 18, 0.78);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 8px 14px;
+  color: #e8edff;
+  font-family: 'Montserrat', sans-serif;
+  pointer-events: none;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  &__label {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    font-weight: 700;
+    opacity: 0.55;
+  }
+
+  &__value {
+    font-size: 16px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #e8edff;
+    letter-spacing: 0.04em;
+  }
+
+  &--finished {
+    border-color: rgba(108, 255, 155, 0.4);
+
+    .run-stats-hud__value { color: #6cff9b; }
+  }
+}
+
 .proximity-prompt--gate-ready {
   border-color: rgba(255, 204, 51, 0.7);
 

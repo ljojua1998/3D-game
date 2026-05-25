@@ -11,6 +11,7 @@ import PasscodeHUD from './components/ui/PasscodeHUD'
 import ProximityPrompt from './components/ui/ProximityPrompt'
 import ScenarioDialog from './components/ui/ScenarioDialog'
 import PasscodeDialog from './components/ui/PasscodeDialog'
+import RunStatsHUD from './components/ui/RunStatsHUD'
 import WinScreen from './components/ui/WinScreen'
 import { generateMaze, MazeGrid } from './game/MazeGenerator'
 import { shortestPath } from './game/pathfinding'
@@ -76,6 +77,9 @@ export default function App() {
   const [openDialogDoorId, setOpenDialogDoorId] = useState<string | null>(null)
   const [passcodeOpen, setPasscodeOpen] = useState(false)
   const [won, setWon] = useState(false)
+  const [runStartedAt, setRunStartedAt] = useState(() => Date.now())
+  const [runEndedAt, setRunEndedAt] = useState<number | null>(null)
+  const [promptCount, setPromptCount] = useState(0)
   const wrongAttemptsRef = useRef<Map<string, number>>(new Map())
 
   const hasAllLetters =
@@ -89,6 +93,9 @@ export default function App() {
     setNearbyGate(false)
     setPasscodeOpen(false)
     setWon(false)
+    setRunStartedAt(Date.now())
+    setRunEndedAt(null)
+    setPromptCount(0)
     wrongAttemptsRef.current = new Map()
   }, [])
 
@@ -239,6 +246,7 @@ export default function App() {
   const handleSubmit = useCallback(
     (answer: string): 'correct' | 'wrong' | 'cooldown' => {
       if (!openDoor || !openScenario) return 'wrong'
+      setPromptCount(p => p + 1)
       const correct = checkAnswer(answer, openScenario.accept)
       if (correct) {
         setWorld(w => ({
@@ -274,11 +282,13 @@ export default function App() {
 
   const handlePasscodeSubmit = useCallback(
     (input: string): boolean => {
+      setPromptCount(p => p + 1)
       const ok = validatePasscode(input, collectedLetters)
       if (!ok) return false
       setWorld(w => ({ ...w, gate: { ...w.gate, unlocked: true } }))
       setPasscodeOpen(false)
       setWon(true)
+      setRunEndedAt(Date.now())
       return true
     },
     [collectedLetters],
@@ -331,6 +341,7 @@ export default function App() {
         </Physics>
       </Canvas>
       <PasscodeHUD totalSlots={world.doors.length} collected={collectedLetters} />
+      <RunStatsHUD startedAt={runStartedAt} endedAt={runEndedAt} promptCount={promptCount} />
       <ProximityPrompt
         status={promptStatus}
         cooldownUntil={nearbyDoor?.cooldownUntil}
@@ -356,10 +367,12 @@ export default function App() {
           onClose={closePasscode}
         />
       )}
-      {won && (
+      {won && runEndedAt !== null && (
         <WinScreen
           passcode={collectedLetters.join(' ')}
           doorsUnlocked={world.doors.filter(d => d.status === 'unlocked').length}
+          elapsedMs={runEndedAt - runStartedAt}
+          promptCount={promptCount}
           onRestart={regenerate}
         />
       )}
