@@ -1,10 +1,9 @@
 import { useBox } from '@react-three/cannon'
 import { Mesh } from 'three'
 import { WALL_COLOR } from '../../theme'
+import { CELL_SIZE, WALL_HEIGHT, WALL_THICKNESS } from '../../game/constants'
 
-export const CELL_SIZE = 4
-export const WALL_THICKNESS = 1
-export const WALL_HEIGHT = 2
+export { CELL_SIZE, WALL_HEIGHT, WALL_THICKNESS }
 
 type WallProps = {
   position: [number, number, number]

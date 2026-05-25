@@ -206,6 +206,35 @@ body {
     stroke-width: 0.5;
   }
 
+  &__path {
+    fill: none;
+    stroke: #5ec8ff;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.55;
+  }
+
+  &__turn {
+    fill: #5ec8ff;
+    stroke: rgba(255, 255, 255, 0.5);
+    stroke-width: 0.5;
+  }
+
+  &__door {
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+
+  &__door--locked {
+    stroke: #ff5b5b;
+  }
+
+  &__door--unlocked {
+    stroke: #6cff9b;
+    opacity: 0.6;
+  }
+
   &__info {
     display: flex;
     gap: 12px;
@@ -262,5 +291,9 @@ body {
     &--start { background: #7cffb0; }
     &--end { background: #ffcc33; }
     &--player { background: #ff5b5b; }
+    &--path { background: #5ec8ff; }
+    &--turn { background: #5ec8ff; border-radius: 50%; }
+    &--door-locked { background: #ff5b5b; border-radius: 0; height: 3px; width: 10px; }
+    &--door-unlocked { background: #6cff9b; border-radius: 0; height: 3px; width: 10px; }
   }
 }

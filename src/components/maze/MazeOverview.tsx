@@ -1,16 +1,20 @@
-import { useEffect, useReducer } from 'react'
+import { useEffect, useMemo, useReducer } from 'react'
 import { MazeGrid } from '../../game/MazeGenerator'
+import { shortestPath } from '../../game/pathfinding'
+import { getTurns } from '../../game/pathAnalysis'
 import { playerState } from '../../game/playerState'
+import { Door } from '../../game/doors'
 import { CELL_SIZE } from './Wall'
 
 const PX = 14
 
 type Props = {
   grid: MazeGrid
+  doors: Door[]
   onRegenerate: () => void
 }
 
-export default function MazeOverview({ grid, onRegenerate }: Props) {
+export default function MazeOverview({ grid, doors, onRegenerate }: Props) {
   const [, tick] = useReducer((s: number) => s + 1, 0)
 
   useEffect(() => {
@@ -22,6 +26,9 @@ export default function MazeOverview({ grid, onRegenerate }: Props) {
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
   }, [])
+
+  const path = useMemo(() => shortestPath(grid), [grid])
+  const turns = useMemo(() => getTurns(path, grid), [path, grid])
 
   const w = grid.width * PX
   const h = grid.height * PX
@@ -50,6 +57,10 @@ export default function MazeOverview({ grid, onRegenerate }: Props) {
     }
   }
 
+  const pathPoints = path
+    .map(c => `${(c.x + 0.5) * PX},${h - (c.y + 0.5) * PX}`)
+    .join(' ')
+
   const startSx = (grid.start.x + 0.5) * PX
   const startSy = h - (grid.start.y + 0.5) * PX
   const endSx = (grid.end.x + 0.5) * PX
@@ -58,6 +69,35 @@ export default function MazeOverview({ grid, onRegenerate }: Props) {
   const margin = 14
   const svgW = w + margin * 2
   const svgH = h + margin * 2
+
+  const doorLines = doors.map(d => {
+    const dx = (d.position[0] / CELL_SIZE + 0.5) * PX
+    const dy = h - (d.position[1] / CELL_SIZE + 0.5) * PX
+    const half = PX * 0.42
+    const cls = d.state === 'locked' ? 'maze-minimap__door--locked' : 'maze-minimap__door--unlocked'
+    if (d.orientation === 'horizontal') {
+      return (
+        <line
+          key={d.id}
+          x1={dx - half}
+          y1={dy}
+          x2={dx + half}
+          y2={dy}
+          className={`maze-minimap__door ${cls}`}
+        />
+      )
+    }
+    return (
+      <line
+        key={d.id}
+        x1={dx}
+        y1={dy - half}
+        x2={dx}
+        y2={dy + half}
+        className={`maze-minimap__door ${cls}`}
+      />
+    )
+  })
 
   return (
     <div className="maze-minimap">
@@ -75,7 +115,18 @@ export default function MazeOverview({ grid, onRegenerate }: Props) {
         <text x={w / 2} y={h + 10} textAnchor="middle" className="maze-minimap__compass">S</text>
         <text x={-4} y={h / 2 + 3} textAnchor="end" className="maze-minimap__compass">W</text>
         <text x={w + 4} y={h / 2 + 3} textAnchor="start" className="maze-minimap__compass">E</text>
+        <polyline className="maze-minimap__path" points={pathPoints} />
+        {turns.map((t, i) => (
+          <circle
+            key={`turn-${i}`}
+            cx={(t.cell.x + 0.5) * PX}
+            cy={h - (t.cell.y + 0.5) * PX}
+            r={PX * 0.16}
+            className="maze-minimap__turn"
+          />
+        ))}
         <g className="maze-minimap__walls">{walls}</g>
+        {doorLines}
         <circle
           cx={startSx}
           cy={startSy}
@@ -100,6 +151,9 @@ export default function MazeOverview({ grid, onRegenerate }: Props) {
         <span>
           cell ({cellX}, {cellY})
         </span>
+        <span>
+          doors <b>{doors.filter(d => d.state === 'locked').length}</b>/{doors.length}
+        </span>
       </div>
       <div className="maze-minimap__keys">
         <span>
@@ -107,6 +161,9 @@ export default function MazeOverview({ grid, onRegenerate }: Props) {
         </span>
         <span>
           <kbd>G</kbd> new maze
+        </span>
+        <span>
+          <kbd>U</kbd> toggle doors
         </span>
         <span>
           <kbd>WASD</kbd> move
@@ -121,6 +178,18 @@ export default function MazeOverview({ grid, onRegenerate }: Props) {
         </span>
         <span>
           <span className="maze-minimap__swatch maze-minimap__swatch--player" /> you
+        </span>
+        <span>
+          <span className="maze-minimap__swatch maze-minimap__swatch--path" /> path
+        </span>
+        <span>
+          <span className="maze-minimap__swatch maze-minimap__swatch--turn" /> turn
+        </span>
+        <span>
+          <span className="maze-minimap__swatch maze-minimap__swatch--door-locked" /> locked
+        </span>
+        <span>
+          <span className="maze-minimap__swatch maze-minimap__swatch--door-unlocked" /> open
         </span>
       </div>
     </div>
