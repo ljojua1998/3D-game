@@ -4,6 +4,7 @@
 :root {
   --pause-z-index: 100;
   --watermark-z-index: 101;
+  --overview-z-index: 200;
 }
 
 body {
@@ -122,5 +123,144 @@ body {
 
   &.show {
     opacity: 1;
+  }
+}
+
+.maze-minimap {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: var(--overview-z-index);
+  background: rgba(8, 10, 18, 0.78);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 10px 12px 8px;
+  color: #e8edff;
+  font-family: 'Montserrat', sans-serif;
+  user-select: none;
+  pointer-events: none;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  &__badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: #0a0c14;
+    background: #ffcc33;
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+
+  &__title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    opacity: 0.85;
+  }
+
+  &__svg {
+    display: block;
+    background: #0a0c14;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+
+  &__walls line {
+    stroke: #e8edff;
+    stroke-width: 2;
+    stroke-linecap: square;
+  }
+
+  &__compass {
+    fill: #7cffb0;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    pointer-events: none;
+  }
+
+  &__start {
+    fill: #7cffb0;
+    stroke: rgba(0, 0, 0, 0.4);
+    stroke-width: 0.5;
+  }
+
+  &__end {
+    fill: #ffcc33;
+    stroke: rgba(0, 0, 0, 0.4);
+    stroke-width: 0.5;
+  }
+
+  &__player {
+    fill: #ff5b5b;
+    stroke: rgba(255, 255, 255, 0.6);
+    stroke-width: 0.5;
+  }
+
+  &__info {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+    font-size: 10px;
+    font-family: 'Lora', serif;
+    opacity: 0.85;
+
+    b {
+      font-weight: 600;
+      color: #ffcc33;
+      font-family: 'Montserrat', sans-serif;
+    }
+  }
+
+  &__keys {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    margin-top: 4px;
+    font-size: 10px;
+    opacity: 0.7;
+
+    kbd {
+      display: inline-block;
+      padding: 1px 5px;
+      margin-right: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 2px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.04);
+    }
+  }
+
+  &__legend {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+    font-size: 9px;
+    opacity: 0.7;
+    align-items: center;
+  }
+
+  &__swatch {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+
+    &--start { background: #7cffb0; }
+    &--end { background: #ffcc33; }
+    &--player { background: #ff5b5b; }
   }
 }

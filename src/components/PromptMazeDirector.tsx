@@ -1,9 +1,6 @@
-import { useState } from 'react'
-import { generateMaze } from '../game/MazeGenerator'
-import { MAZE_HEIGHT, MAZE_SEED, MAZE_WIDTH } from '../config'
+import { MazeGrid } from '../game/MazeGenerator'
 import GeneratedMaze from './maze/GeneratedMaze'
 
-export default function PromptMazeDirector() {
-  const [grid] = useState(() => generateMaze(MAZE_WIDTH, MAZE_HEIGHT, MAZE_SEED))
+export default function PromptMazeDirector({ grid }: { grid: MazeGrid }) {
   return <GeneratedMaze grid={grid} />
 }
