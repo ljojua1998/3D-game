@@ -68,6 +68,31 @@ function makeStoneTexture(): CanvasTexture {
   }
   ctx.putImageData(img, 0, 0)
 
+  ctx.save()
+  ctx.translate(size / 2, size / 2)
+  ctx.font = 'bold 78px "Arial Black", "Helvetica Neue", Helvetica, Arial, sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.lineJoin = 'round'
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.45)'
+  ctx.fillText('CROCOSQUAD', 4, 6)
+
+  ctx.lineWidth = 7
+  ctx.strokeStyle = 'rgba(12, 60, 22, 0.95)'
+  ctx.strokeText('CROCOSQUAD', 0, 0)
+
+  const grad = ctx.createLinearGradient(0, -40, 0, 40)
+  grad.addColorStop(0, '#7dff9e')
+  grad.addColorStop(0.5, '#2af56b')
+  grad.addColorStop(1, '#18b84b')
+  ctx.fillStyle = grad
+  ctx.fillText('CROCOSQUAD', 0, 0)
+
+  ctx.fillStyle = 'rgba(220, 255, 230, 0.55)'
+  ctx.fillText('CROCOSQUAD', 0, -1)
+  ctx.restore()
+
   const tex = new CanvasTexture(canvas)
   tex.wrapS = RepeatWrapping
   tex.wrapT = RepeatWrapping
