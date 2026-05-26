@@ -19,44 +19,68 @@ function makeStoneTexture(): CanvasTexture {
   const ctx = canvas.getContext('2d')!
   const rand = mulberry32(1337)
 
-  ctx.fillStyle = '#3d3530'
+  ctx.fillStyle = '#1a1612'
   ctx.fillRect(0, 0, size, size)
 
-  const brickH = 56
+  const brickH = 50
   const brickW = 110
-  const pad = 4
+  const pad = 3
 
   for (let row = 0; row * brickH < size + brickH; row++) {
     const y = row * brickH
     const offset = (row % 2) * (brickW / 2)
     for (let col = -1; col * brickW + offset < size + brickW; col++) {
       const x = col * brickW + offset
-      const wJitter = (rand() - 0.5) * 16
-      const hJitter = (rand() - 0.5) * 8
-      const bw = brickW - pad * 2 + wJitter
-      const bh = brickH - pad * 2 + hJitter
+      const bw = brickW - pad * 2 + (rand() - 0.5) * 6
+      const bh = brickH - pad * 2 + (rand() - 0.5) * 4
 
-      const base = 132 + rand() * 38
-      const r = Math.min(255, base + rand() * 12 + 6)
-      const g = Math.min(255, base + rand() * 10 - 4)
-      const b = Math.min(255, base + rand() * 8 - 18)
+      const roll = rand()
+      let r: number
+      let g: number
+      let b: number
+      if (roll < 0.12) {
+        const base = 32 + rand() * 38
+        r = base + 12
+        g = base - 4
+        b = Math.max(8, base - 12)
+      } else if (roll < 0.28) {
+        const base = 95 + rand() * 35
+        r = base + 22
+        g = base - 22
+        b = Math.max(18, base - 42)
+      } else {
+        const base = 145 + rand() * 55
+        r = Math.min(240, base + 28 + rand() * 14)
+        g = Math.min(160, base * 0.55 + rand() * 12)
+        b = Math.min(110, base * 0.32 + rand() * 12)
+      }
       ctx.fillStyle = `rgb(${r | 0}, ${g | 0}, ${b | 0})`
       ctx.fillRect(x + pad, y + pad, bw, bh)
 
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.28)'
-      ctx.fillRect(x + pad, y + pad + bh - 4, bw, 4)
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.32)'
+      ctx.fillRect(x + pad, y + pad + bh - 3, bw, 3)
       ctx.fillRect(x + pad + bw - 3, y + pad, 3, bh)
 
-      ctx.fillStyle = 'rgba(255, 235, 200, 0.14)'
-      ctx.fillRect(x + pad, y + pad, bw, 2)
-      ctx.fillRect(x + pad, y + pad, 2, bh)
+      ctx.fillStyle = 'rgba(255, 220, 180, 0.09)'
+      ctx.fillRect(x + pad, y + pad, bw, 1.5)
+      ctx.fillRect(x + pad, y + pad, 1.5, bh)
 
-      const spots = Math.floor(rand() * 2)
-      for (let c = 0; c < spots; c++) {
+      const grimeSpots = Math.floor(rand() * 3)
+      for (let s = 0; s < grimeSpots; s++) {
         const cx = x + pad + rand() * bw
         const cy = y + pad + rand() * bh
-        const cr = 1 + rand() * 2.5
-        ctx.fillStyle = 'rgba(20, 14, 10, 0.42)'
+        const cr = 1 + rand() * 3
+        ctx.fillStyle = `rgba(10, 6, 4, ${0.25 + rand() * 0.3})`
+        ctx.beginPath()
+        ctx.arc(cx, cy, cr, 0, Math.PI * 2)
+        ctx.fill()
+      }
+
+      if (rand() < 0.25) {
+        const cx = x + pad + rand() * bw
+        const cy = y + pad + rand() * bh
+        const cr = 2 + rand() * 4
+        ctx.fillStyle = `rgba(255, 210, 170, ${0.08 + rand() * 0.1})`
         ctx.beginPath()
         ctx.arc(cx, cy, cr, 0, Math.PI * 2)
         ctx.fill()
@@ -64,37 +88,22 @@ function makeStoneTexture(): CanvasTexture {
     }
   }
 
-  for (let i = 0; i < 18; i++) {
-    const mx = rand() * size
-    const my = rand() * (size * 0.65)
-    const baseRad = 18 + rand() * 28
-    for (let blob = 0; blob < 5; blob++) {
-      const ox = (rand() - 0.5) * baseRad * 1.8
-      const oy = (rand() - 0.5) * baseRad * 0.9
-      const rad = baseRad * (0.4 + rand() * 0.6)
-      const r = 55 + rand() * 35
-      const g = 95 + rand() * 40
-      const b = 28 + rand() * 22
-      const alpha = 0.32 + rand() * 0.38
-      ctx.fillStyle = `rgba(${r | 0}, ${g | 0}, ${b | 0}, ${alpha})`
-      ctx.beginPath()
-      ctx.arc(mx + ox, my + oy, rad, 0, Math.PI * 2)
-      ctx.fill()
-    }
-    for (let s = 0; s < 6; s++) {
-      const sx = mx + (rand() - 0.5) * baseRad * 1.6
-      const sy = my + (rand() - 0.5) * baseRad * 0.6
-      const sr = 1.5 + rand() * 2
-      ctx.fillStyle = `rgba(${(160 + rand() * 50) | 0}, ${(190 + rand() * 40) | 0}, ${(70 + rand() * 30) | 0}, 0.55)`
-      ctx.beginPath()
-      ctx.arc(sx, sy, sr, 0, Math.PI * 2)
-      ctx.fill()
-    }
+  for (let i = 0; i < 6; i++) {
+    const sx = rand() * size
+    const sy = rand() * size
+    const sw = 30 + rand() * 80
+    const sh = 6 + rand() * 18
+    ctx.save()
+    ctx.translate(sx, sy)
+    ctx.rotate((rand() - 0.5) * 0.4)
+    ctx.fillStyle = `rgba(15, 8, 5, ${0.12 + rand() * 0.18})`
+    ctx.fillRect(-sw / 2, -sh / 2, sw, sh)
+    ctx.restore()
   }
 
   const img = ctx.getImageData(0, 0, size, size)
   for (let i = 0; i < img.data.length; i += 4) {
-    const n = (rand() - 0.5) * 16
+    const n = (rand() - 0.5) * 14
     img.data[i] = Math.max(0, Math.min(255, img.data[i] + n))
     img.data[i + 1] = Math.max(0, Math.min(255, img.data[i + 1] + n))
     img.data[i + 2] = Math.max(0, Math.min(255, img.data[i + 2] + n))
