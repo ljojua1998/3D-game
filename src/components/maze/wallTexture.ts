@@ -19,86 +19,75 @@ function makeStoneTexture(): CanvasTexture {
   const ctx = canvas.getContext('2d')!
   const rand = mulberry32(1337)
 
-  ctx.fillStyle = '#1a1612'
+  ctx.fillStyle = '#3a6a52'
   ctx.fillRect(0, 0, size, size)
 
-  const brickH = 50
-  const brickW = 110
-  const pad = 3
-
-  for (let row = 0; row * brickH < size + brickH; row++) {
-    const y = row * brickH
-    const offset = (row % 2) * (brickW / 2)
-    for (let col = -1; col * brickW + offset < size + brickW; col++) {
-      const x = col * brickW + offset
-      const bw = brickW - pad * 2 + (rand() - 0.5) * 6
-      const bh = brickH - pad * 2 + (rand() - 0.5) * 4
-
-      const roll = rand()
-      let r: number
-      let g: number
-      let b: number
-      if (roll < 0.12) {
-        const base = 32 + rand() * 38
-        r = base + 12
-        g = base - 4
-        b = Math.max(8, base - 12)
-      } else if (roll < 0.28) {
-        const base = 95 + rand() * 35
-        r = base + 22
-        g = base - 22
-        b = Math.max(18, base - 42)
-      } else {
-        const base = 145 + rand() * 55
-        r = Math.min(240, base + 28 + rand() * 14)
-        g = Math.min(160, base * 0.55 + rand() * 12)
-        b = Math.min(110, base * 0.32 + rand() * 12)
-      }
-      ctx.fillStyle = `rgb(${r | 0}, ${g | 0}, ${b | 0})`
-      ctx.fillRect(x + pad, y + pad, bw, bh)
-
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.32)'
-      ctx.fillRect(x + pad, y + pad + bh - 3, bw, 3)
-      ctx.fillRect(x + pad + bw - 3, y + pad, 3, bh)
-
-      ctx.fillStyle = 'rgba(255, 220, 180, 0.09)'
-      ctx.fillRect(x + pad, y + pad, bw, 1.5)
-      ctx.fillRect(x + pad, y + pad, 1.5, bh)
-
-      const grimeSpots = Math.floor(rand() * 3)
-      for (let s = 0; s < grimeSpots; s++) {
-        const cx = x + pad + rand() * bw
-        const cy = y + pad + rand() * bh
-        const cr = 1 + rand() * 3
-        ctx.fillStyle = `rgba(10, 6, 4, ${0.25 + rand() * 0.3})`
-        ctx.beginPath()
-        ctx.arc(cx, cy, cr, 0, Math.PI * 2)
-        ctx.fill()
-      }
-
-      if (rand() < 0.25) {
-        const cx = x + pad + rand() * bw
-        const cy = y + pad + rand() * bh
-        const cr = 2 + rand() * 4
-        ctx.fillStyle = `rgba(255, 210, 170, ${0.08 + rand() * 0.1})`
-        ctx.beginPath()
-        ctx.arc(cx, cy, cr, 0, Math.PI * 2)
-        ctx.fill()
-      }
+  for (let i = 0; i < 32; i++) {
+    const cx = rand() * size
+    const cy = rand() * size
+    const radius = 45 + rand() * 110
+    const lighter = rand() < 0.5
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius)
+    if (lighter) {
+      const a = 0.1 + rand() * 0.2
+      const r = 110 + rand() * 28
+      const g = 158 + rand() * 22
+      const b = 124 + rand() * 18
+      grad.addColorStop(0, `rgba(${r | 0}, ${g | 0}, ${b | 0}, ${a})`)
+      grad.addColorStop(1, `rgba(${r | 0}, ${g | 0}, ${b | 0}, 0)`)
+    } else {
+      const a = 0.12 + rand() * 0.22
+      const r = 18 + rand() * 22
+      const g = 42 + rand() * 22
+      const b = 30 + rand() * 18
+      grad.addColorStop(0, `rgba(${r | 0}, ${g | 0}, ${b | 0}, ${a})`)
+      grad.addColorStop(1, `rgba(${r | 0}, ${g | 0}, ${b | 0}, 0)`)
     }
+    ctx.fillStyle = grad
+    ctx.fillRect(0, 0, size, size)
   }
 
   for (let i = 0; i < 6; i++) {
     const sx = rand() * size
     const sy = rand() * size
-    const sw = 30 + rand() * 80
-    const sh = 6 + rand() * 18
+    const sw = 90 + rand() * 220
+    const sh = 4 + rand() * 14
     ctx.save()
     ctx.translate(sx, sy)
-    ctx.rotate((rand() - 0.5) * 0.4)
-    ctx.fillStyle = `rgba(15, 8, 5, ${0.12 + rand() * 0.18})`
+    ctx.rotate((rand() - 0.5) * 0.18)
+    const grad = ctx.createLinearGradient(-sw / 2, 0, sw / 2, 0)
+    const a = 0.08 + rand() * 0.14
+    grad.addColorStop(0, 'rgba(120, 165, 130, 0)')
+    grad.addColorStop(0.5, `rgba(120, 165, 130, ${a})`)
+    grad.addColorStop(1, 'rgba(120, 165, 130, 0)')
+    ctx.fillStyle = grad
     ctx.fillRect(-sw / 2, -sh / 2, sw, sh)
     ctx.restore()
+  }
+
+  for (let i = 0; i < 280; i++) {
+    const cx = rand() * size
+    const cy = rand() * size
+    const r = 0.6 + rand() * 2.4
+    const a = 0.4 + rand() * 0.45
+    ctx.fillStyle = `rgba(10, 20, 14, ${a})`
+    ctx.beginPath()
+    ctx.arc(cx, cy, r, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  for (let i = 0; i < 12; i++) {
+    const cx = rand() * size
+    const cy = rand() * size
+    const r = 4 + rand() * 10
+    const a = 0.18 + rand() * 0.22
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r)
+    grad.addColorStop(0, `rgba(8, 18, 12, ${a})`)
+    grad.addColorStop(1, 'rgba(8, 18, 12, 0)')
+    ctx.fillStyle = grad
+    ctx.beginPath()
+    ctx.arc(cx, cy, r, 0, Math.PI * 2)
+    ctx.fill()
   }
 
   const img = ctx.getImageData(0, 0, size, size)
