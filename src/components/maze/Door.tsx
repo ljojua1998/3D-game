@@ -1,16 +1,14 @@
 import { useBox } from '@react-three/cannon'
 import { useFrame } from '@react-three/fiber'
 import { Billboard, Text } from '@react-three/drei'
-import { useReducer, useRef, useEffect } from 'react'
+import { useReducer, useRef, useEffect, useMemo } from 'react'
 import { Group, Mesh } from 'three'
 import { Door as DoorData } from '../../game/doors'
 import { CELL_SIZE, DOOR_THICKNESS, WALL_HEIGHT } from '../../game/constants'
+import { getWoodTexture } from './doorTexture'
 
 const SIGN_Z = WALL_HEIGHT + 0.6
-const COLOR_LOCKED = '#c83a3a'
-const COLOR_COOLDOWN = '#5a2727'
-const COLOR_ANSWERED = '#e0b73f'
-const COLOR_UNLOCKED = '#6cff9b'
+const COLOR_GHOST = '#9bd07a'
 
 type Props = {
   door: DoorData
@@ -23,12 +21,16 @@ function doorArgs(d: DoorData): [number, number, number] {
     : [DOOR_THICKNESS, CELL_SIZE, WALL_HEIGHT]
 }
 
-function doorColor(status: DoorData['status']): string {
+function statusEmissive(status: DoorData['status']): { color: string; intensity: number } {
   switch (status) {
-    case 'locked': return COLOR_LOCKED
-    case 'cooldown': return COLOR_COOLDOWN
-    case 'answered': return COLOR_ANSWERED
-    case 'unlocked': return COLOR_UNLOCKED
+    case 'locked':
+      return { color: '#000000', intensity: 0 }
+    case 'cooldown':
+      return { color: '#7a1818', intensity: 0.35 }
+    case 'answered':
+      return { color: '#8a5a18', intensity: 0.55 }
+    case 'unlocked':
+      return { color: '#000000', intensity: 0 }
   }
 }
 
@@ -44,16 +46,26 @@ function DoorPhysicsMesh({ door }: { door: DoorData }) {
     args,
     position: center,
   }))
-  const color = doorColor(door.status)
+
+  const texture = useMemo(() => {
+    const t = getWoodTexture().clone()
+    t.repeat.set(1, 1)
+    t.needsUpdate = true
+    return t
+  }, [])
+
+  const { color: emissiveColor, intensity } = statusEmissive(door.status)
+
   return (
     <mesh ref={ref} castShadow receiveShadow>
       <boxGeometry args={args} />
       <meshStandardMaterial
-        color={color}
-        emissive={color}
-        emissiveIntensity={0.18}
-        metalness={0.2}
-        roughness={0.4}
+        map={texture}
+        color={'#d8c4a8'}
+        emissive={emissiveColor}
+        emissiveIntensity={intensity}
+        roughness={0.78}
+        metalness={0.06}
       />
     </mesh>
   )
@@ -70,11 +82,11 @@ function DoorGhostMesh({ door }: { door: DoorData }) {
     <mesh position={center}>
       <boxGeometry args={args} />
       <meshStandardMaterial
-        color={COLOR_UNLOCKED}
-        emissive={COLOR_UNLOCKED}
-        emissiveIntensity={0.45}
+        color={COLOR_GHOST}
+        emissive={COLOR_GHOST}
+        emissiveIntensity={0.4}
         transparent
-        opacity={0.18}
+        opacity={0.16}
       />
     </mesh>
   )
@@ -107,14 +119,14 @@ function DoorSign({ door, isNearby }: Props) {
   let pre: string | null = null
   if (door.status === 'locked') {
     text = '?'
-    color = '#ffffff'
+    color = '#f4e6c8'
   } else if (door.status === 'cooldown') {
     const left = Math.max(0, Math.ceil((door.cooldownUntil - Date.now()) / 1000))
     text = `${left}s`
-    color = '#ff7b7b'
+    color = '#ff9b7b'
   } else {
     text = door.letter
-    color = '#14171f'
+    color = '#fff1c8'
     pre = 'U'
   }
 
@@ -152,7 +164,8 @@ function DoorSign({ door, isNearby }: Props) {
 }
 
 export default function Door({ door, isNearby }: Props) {
-  const hasCollider = door.status === 'locked' || door.status === 'cooldown' || door.status === 'answered'
+  const hasCollider =
+    door.status === 'locked' || door.status === 'cooldown' || door.status === 'answered'
   return (
     <>
       {hasCollider ? <DoorPhysicsMesh door={door} /> : <DoorGhostMesh door={door} />}

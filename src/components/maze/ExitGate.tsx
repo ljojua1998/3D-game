@@ -1,14 +1,13 @@
 import { useBox } from '@react-three/cannon'
 import { useFrame } from '@react-three/fiber'
 import { Billboard, Text } from '@react-three/drei'
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { Group, Mesh } from 'three'
 import { ExitGate as ExitGateData } from '../../game/exitGate'
 import { CELL_SIZE, DOOR_THICKNESS, WALL_HEIGHT } from '../../game/constants'
+import { getWoodTexture } from './doorTexture'
 
-const GATE_LOCKED = '#8c39ff'
-const GATE_READY = '#ffcc33'
-const GATE_UNLOCKED = '#6cff9b'
+const GATE_GHOST = '#9bd07a'
 const SIGN_Z = WALL_HEIGHT + 0.8
 
 type Props = {
@@ -23,7 +22,13 @@ function gateArgs(g: ExitGateData): [number, number, number] {
     : [DOOR_THICKNESS, CELL_SIZE, WALL_HEIGHT]
 }
 
-function GateBlockingMesh({ gate, color }: { gate: ExitGateData; color: string }) {
+function GateBlockingMesh({
+  gate,
+  hasAllLetters,
+}: {
+  gate: ExitGateData
+  hasAllLetters: boolean
+}) {
   const args = gateArgs(gate)
   const center: [number, number, number] = [
     gate.position[0],
@@ -35,15 +40,27 @@ function GateBlockingMesh({ gate, color }: { gate: ExitGateData; color: string }
     args,
     position: center,
   }))
+
+  const texture = useMemo(() => {
+    const t = getWoodTexture().clone()
+    t.repeat.set(1, 1)
+    t.needsUpdate = true
+    return t
+  }, [])
+
+  const emissiveColor = hasAllLetters ? '#8a5a18' : '#000000'
+  const emissiveIntensity = hasAllLetters ? 0.62 : 0
+
   return (
     <mesh ref={ref} castShadow receiveShadow>
       <boxGeometry args={args} />
       <meshStandardMaterial
-        color={color}
-        emissive={color}
-        emissiveIntensity={0.55}
-        metalness={0.3}
-        roughness={0.25}
+        map={texture}
+        color={'#d8c4a8'}
+        emissive={emissiveColor}
+        emissiveIntensity={emissiveIntensity}
+        roughness={0.72}
+        metalness={0.08}
       />
     </mesh>
   )
@@ -60,11 +77,11 @@ function GateGhostMesh({ gate }: { gate: ExitGateData }) {
     <mesh position={center}>
       <boxGeometry args={args} />
       <meshStandardMaterial
-        color={GATE_UNLOCKED}
-        emissive={GATE_UNLOCKED}
-        emissiveIntensity={0.6}
+        color={GATE_GHOST}
+        emissive={GATE_GHOST}
+        emissiveIntensity={0.55}
         transparent
-        opacity={0.2}
+        opacity={0.18}
       />
     </mesh>
   )
@@ -86,7 +103,7 @@ function GateSign({ gate, isNearby, hasAllLetters }: Props) {
 
   const title = hasAllLetters ? 'EXIT' : 'LOCKED'
   const sub = hasAllLetters ? '[E] enter passcode' : 'collect all letters'
-  const titleColor = hasAllLetters ? GATE_READY : '#ff7b7b'
+  const titleColor = hasAllLetters ? '#ffd76a' : '#ff9b7b'
 
   return (
     <Billboard position={[gate.position[0], gate.position[1], gate.position[2] + SIGN_Z]}>
@@ -118,13 +135,12 @@ function GateSign({ gate, isNearby, hasAllLetters }: Props) {
 }
 
 export default function ExitGate(props: Props) {
-  const color = props.hasAllLetters ? GATE_READY : GATE_LOCKED
   return (
     <>
       {props.gate.unlocked ? (
         <GateGhostMesh gate={props.gate} />
       ) : (
-        <GateBlockingMesh gate={props.gate} color={color} />
+        <GateBlockingMesh gate={props.gate} hasAllLetters={props.hasAllLetters} />
       )}
       <GateSign {...props} />
     </>
