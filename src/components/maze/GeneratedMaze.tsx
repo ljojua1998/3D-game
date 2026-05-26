@@ -7,6 +7,7 @@ import Wall, { CELL_SIZE } from './Wall'
 import Door from './Door'
 import ExitGate from './ExitGate'
 import EndMarker from './EndMarker'
+import GroundLogos from './GroundLogos'
 
 export const cellToWorld = (x: number, y: number): [number, number, number] => [
   x * CELL_SIZE,
@@ -84,6 +85,7 @@ export default function GeneratedMaze({
   return (
     <Fragment>
       {walls}
+      <GroundLogos grid={grid} texture={logo} />
       {doors.map(d => <Door key={d.id} door={d} isNearby={nearbyDoorId === d.id} />)}
       <ExitGate gate={gate} isNearby={nearbyGate} hasAllLetters={hasAllLetters} />
       <EndMarker position={endPos} />
