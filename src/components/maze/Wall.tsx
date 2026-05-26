@@ -1,7 +1,8 @@
 import { useBox } from '@react-three/cannon'
+import { useMemo } from 'react'
 import { Mesh } from 'three'
-import { WALL_COLOR } from '../../theme'
 import { CELL_SIZE, WALL_HEIGHT, WALL_THICKNESS } from '../../game/constants'
+import { getStoneTexture } from './wallTexture'
 
 export { CELL_SIZE, WALL_HEIGHT, WALL_THICKNESS }
 
@@ -21,10 +22,18 @@ export default function Wall({ position, orientation }: WallProps) {
     args,
     position: center,
   }))
+
+  const texture = useMemo(() => {
+    const t = getStoneTexture().clone()
+    t.repeat.set(CELL_SIZE / 2, WALL_HEIGHT / 2)
+    t.needsUpdate = true
+    return t
+  }, [])
+
   return (
     <mesh ref={ref} castShadow receiveShadow>
       <boxGeometry args={args} />
-      <meshPhongMaterial color={WALL_COLOR} />
+      <meshStandardMaterial map={texture} roughness={0.88} metalness={0.04} />
     </mesh>
   )
 }
