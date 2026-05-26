@@ -696,6 +696,120 @@ body {
 
     .run-stats-hud__value { color: #6cff9b; }
   }
+
+  &--warning {
+    border-color: rgba(255, 204, 51, 0.55);
+
+    .run-stats-hud__value { color: #ffcc33; }
+  }
+
+  &--critical {
+    border-color: rgba(255, 91, 91, 0.7);
+    animation: hud-pulse 0.9s ease-in-out infinite;
+
+    .run-stats-hud__value { color: #ff7b7b; }
+  }
+
+  &--expired {
+    border-color: rgba(255, 91, 91, 0.8);
+
+    .run-stats-hud__value { color: #ff5b5b; }
+  }
+}
+
+@keyframes hud-pulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(255, 91, 91, 0); }
+  50% { box-shadow: 0 0 18px rgba(255, 91, 91, 0.55); }
+}
+
+.lose-screen__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--dialog-z-index) + 10);
+  background: radial-gradient(ellipse at center, rgba(40, 14, 14, 0.94) 0%, rgba(0, 0, 0, 0.95) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  animation: win-fade-in 0.4s ease-out;
+}
+
+.lose-screen {
+  width: min(540px, 92vw);
+  text-align: center;
+  padding: 36px 32px;
+  background: #1a1417;
+  border: 1px solid rgba(255, 91, 91, 0.4);
+  border-radius: 10px;
+  color: #e8edff;
+  font-family: 'Montserrat', sans-serif;
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.7), 0 0 120px rgba(255, 91, 91, 0.18);
+
+  &__title {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #ff5b5b;
+    text-shadow: 0 0 24px rgba(255, 91, 91, 0.55);
+    margin-bottom: 4px;
+  }
+
+  &__sub {
+    font-family: 'Lora', serif;
+    font-size: 15px;
+    color: #c4aab0;
+    margin-bottom: 26px;
+  }
+
+  &__stats {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  &__stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+  }
+
+  &__stat-label {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  &__stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #ffcc33;
+    letter-spacing: 0.16em;
+  }
+
+  &__btn {
+    width: 100%;
+    padding: 14px 18px;
+    background: #ff5b5b;
+    color: #14171f;
+    border: 0;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    text-transform: uppercase;
+
+    &:hover {
+      background: #ff7b7b;
+    }
+  }
 }
 
 .proximity-prompt--gate-ready {

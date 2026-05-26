@@ -9,9 +9,10 @@ export { CELL_SIZE, WALL_HEIGHT, WALL_THICKNESS }
 type WallProps = {
   position: [number, number, number]
   orientation: 'horizontal' | 'vertical'
+  tint?: string
 }
 
-export default function Wall({ position, orientation }: WallProps) {
+export default function Wall({ position, orientation, tint = '#ffffff' }: WallProps) {
   const args: [number, number, number] =
     orientation === 'horizontal'
       ? [CELL_SIZE, WALL_THICKNESS, WALL_HEIGHT]
@@ -33,7 +34,7 @@ export default function Wall({ position, orientation }: WallProps) {
   return (
     <mesh ref={ref} castShadow receiveShadow>
       <boxGeometry args={args} />
-      <meshStandardMaterial map={texture} roughness={0.88} metalness={0.04} />
+      <meshStandardMaterial map={texture} color={tint} roughness={0.86} metalness={0.04} />
     </mesh>
   )
 }

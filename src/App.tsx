@@ -11,8 +11,9 @@ import PasscodeHUD from './components/ui/PasscodeHUD'
 import ProximityPrompt from './components/ui/ProximityPrompt'
 import ScenarioDialog from './components/ui/ScenarioDialog'
 import PasscodeDialog from './components/ui/PasscodeDialog'
-import RunStatsHUD from './components/ui/RunStatsHUD'
+import RunStatsHUD, { RUN_DURATION_MS } from './components/ui/RunStatsHUD'
 import WinScreen from './components/ui/WinScreen'
+import LoseScreen from './components/ui/LoseScreen'
 import { generateMaze, MazeGrid } from './game/MazeGenerator'
 import { shortestPath } from './game/pathfinding'
 import { getTurns } from './game/pathAnalysis'
@@ -77,6 +78,7 @@ export default function App() {
   const [openDialogDoorId, setOpenDialogDoorId] = useState<string | null>(null)
   const [passcodeOpen, setPasscodeOpen] = useState(false)
   const [won, setWon] = useState(false)
+  const [lost, setLost] = useState(false)
   const [runStartedAt, setRunStartedAt] = useState(() => Date.now())
   const [runEndedAt, setRunEndedAt] = useState<number | null>(null)
   const [promptCount, setPromptCount] = useState(0)
@@ -93,6 +95,7 @@ export default function App() {
     setNearbyGate(false)
     setPasscodeOpen(false)
     setWon(false)
+    setLost(false)
     setRunStartedAt(Date.now())
     setRunEndedAt(null)
     setPromptCount(0)
@@ -110,6 +113,19 @@ export default function App() {
   useEffect(() => {
     syncGameState({ doors: world.doors, collectedLetters, won })
   }, [world.doors, collectedLetters, won])
+
+  useEffect(() => {
+    if (won || lost) return
+    const id = setInterval(() => {
+      if (Date.now() >= runStartedAt + RUN_DURATION_MS) {
+        setLost(true)
+        setOpenDialogDoorId(null)
+        setPasscodeOpen(false)
+        if (document.pointerLockElement === document.body) document.exitPointerLock()
+      }
+    }, 250)
+    return () => clearInterval(id)
+  }, [won, lost, runStartedAt])
 
   useEffect(() => {
     const path = shortestPath(world.grid)
@@ -185,7 +201,7 @@ export default function App() {
         }
       }
       if (isInputTarget(e.target)) return
-      if (won) return
+      if (won || lost) return
 
       if (e.code === 'KeyM') {
         setMinimapVisible(v => !v)
@@ -230,6 +246,7 @@ export default function App() {
     world.doors,
     world.gate.unlocked,
     won,
+    lost,
   ])
 
   const openDoor = openDialogDoorId
@@ -341,7 +358,12 @@ export default function App() {
         </Physics>
       </Canvas>
       <PasscodeHUD totalSlots={world.doors.length} collected={collectedLetters} />
-      <RunStatsHUD startedAt={runStartedAt} endedAt={runEndedAt} promptCount={promptCount} />
+      <RunStatsHUD
+        startedAt={runStartedAt}
+        endedAt={runEndedAt}
+        promptCount={promptCount}
+        lost={lost}
+      />
       <ProximityPrompt
         status={promptStatus}
         cooldownUntil={nearbyDoor?.cooldownUntil}
@@ -372,6 +394,14 @@ export default function App() {
           passcode={collectedLetters.join(' ')}
           doorsUnlocked={world.doors.filter(d => d.status === 'unlocked').length}
           elapsedMs={runEndedAt - runStartedAt}
+          promptCount={promptCount}
+          onRestart={regenerate}
+        />
+      )}
+      {lost && (
+        <LoseScreen
+          collectedCount={collectedLetters.length}
+          totalDoors={world.doors.length}
           promptCount={promptCount}
           onRestart={regenerate}
         />

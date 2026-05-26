@@ -1,9 +1,12 @@
 import { useEffect, useReducer } from 'react'
 
+export const RUN_DURATION_MS = 10 * 60 * 1000
+
 type Props = {
   startedAt: number
   endedAt: number | null
   promptCount: number
+  lost?: boolean
 }
 
 export function formatElapsed(ms: number): string {
@@ -13,23 +16,35 @@ export function formatElapsed(ms: number): string {
   return `${mm}:${ss}`
 }
 
-export default function RunStatsHUD({ startedAt, endedAt, promptCount }: Props) {
+export default function RunStatsHUD({ startedAt, endedAt, promptCount, lost }: Props) {
   const [, force] = useReducer((s: number) => s + 1, 0)
 
   useEffect(() => {
-    if (endedAt !== null) return
+    if (endedAt !== null || lost) return
     const id = setInterval(force, 250)
     return () => clearInterval(id)
-  }, [endedAt])
+  }, [endedAt, lost])
 
-  const elapsed = (endedAt ?? Date.now()) - startedAt
+  const now = endedAt ?? Date.now()
+  const remaining = Math.max(0, startedAt + RUN_DURATION_MS - now)
   const finished = endedAt !== null
+  const expired = remaining === 0
+
+  const cls = finished
+    ? 'run-stats-hud--finished'
+    : expired
+      ? 'run-stats-hud--expired'
+      : remaining < 30_000
+        ? 'run-stats-hud--critical'
+        : remaining < 120_000
+          ? 'run-stats-hud--warning'
+          : ''
 
   return (
-    <div className={`run-stats-hud ${finished ? 'run-stats-hud--finished' : ''}`}>
+    <div className={`run-stats-hud ${cls}`}>
       <div className="run-stats-hud__row">
-        <span className="run-stats-hud__label">TIME</span>
-        <span className="run-stats-hud__value">{formatElapsed(elapsed)}</span>
+        <span className="run-stats-hud__label">TIME LEFT</span>
+        <span className="run-stats-hud__value">{formatElapsed(remaining)}</span>
       </div>
       <div className="run-stats-hud__row">
         <span className="run-stats-hud__label">PROMPTS</span>
