@@ -41,7 +41,7 @@ export default function Wall({ position, orientation, tint = '#ffffff', logo }: 
 
   const texture = useMemo(() => {
     const t = getStoneTexture().clone()
-    t.repeat.set(1, 1)
+    t.repeat.set(CELL_SIZE / 2, WALL_HEIGHT / 2)
     t.needsUpdate = true
     return t
   }, [])
