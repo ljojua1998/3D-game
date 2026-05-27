@@ -134,7 +134,7 @@ function ScenarioSuccess({
         <div className="scenario-dialog__instructions">
           დაიმახსოვრე ეს ასო — ბოლო კარის გასახსნელად დაგჭირდება.
           <br />
-          დახურე ფანჯარა და დააჭირე <kbd>U</kbd> კარის გასახსნელად.
+          დააჭირე <kbd>U</kbd> კარის გასახსნელად.
         </div>
         <div className="scenario-dialog__footer">
           <div className="scenario-dialog__spacer" />

@@ -213,12 +213,16 @@ export default function App() {
         if (openDialogDoorId || passcodeOpen || !nearbyDoorId) return
         const d = world.doors.find(x => x.id === nearbyDoorId)
         if (!d || d.status !== 'locked') return
+        e.preventDefault()
         if (document.pointerLockElement === document.body) document.exitPointerLock()
         setOpenDialogDoorId(nearbyDoorId)
       } else if (e.code === 'KeyU' && !e.shiftKey) {
-        if (openDialogDoorId || passcodeOpen || !nearbyDoorId) return
-        const d = world.doors.find(x => x.id === nearbyDoorId)
+        if (passcodeOpen) return
+        const targetDoorId = openDialogDoorId ?? nearbyDoorId
+        if (!targetDoorId) return
+        const d = world.doors.find(x => x.id === targetDoorId)
         if (!d || d.status !== 'answered') return
+        e.preventDefault()
         setWorld(w => ({
           ...w,
           doors: w.doors.map(x =>
@@ -226,9 +230,11 @@ export default function App() {
           ),
         }))
         setCollectedLetters(prev => [...prev, d.letter])
+        if (openDialogDoorId) setOpenDialogDoorId(null)
       } else if (e.code === 'KeyE') {
         if (openDialogDoorId || passcodeOpen) return
         if (!nearbyGate || !hasAllLetters || world.gate.unlocked) return
+        e.preventDefault()
         if (document.pointerLockElement === document.body) document.exitPointerLock()
         setPasscodeOpen(true)
       }
