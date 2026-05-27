@@ -230,7 +230,17 @@ export default function App() {
           ),
         }))
         setCollectedLetters(prev => [...prev, d.letter])
-        if (openDialogDoorId) setOpenDialogDoorId(null)
+        if (openDialogDoorId) {
+          setOpenDialogDoorId(null)
+          if (document.pointerLockElement !== document.body) {
+            try {
+              const req = document.body.requestPointerLock() as unknown as
+                | Promise<void>
+                | undefined
+              if (req && typeof req.then === 'function') req.catch(() => {})
+            } catch {}
+          }
+        }
       } else if (e.code === 'KeyE') {
         if (openDialogDoorId || passcodeOpen) return
         if (!nearbyGate || !hasAllLetters || world.gate.unlocked) return
