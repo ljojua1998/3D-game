@@ -9,34 +9,50 @@ type Props = {
 export default function PasscodeDialog({ collected, onSubmit, onClose }: Props) {
   const [input, setInput] = useState('')
   const [feedback, setFeedback] = useState<'wrong' | null>(null)
+  const [submitting, setSubmitting] = useState(false)
   const ref = useRef<HTMLInputElement | null>(null)
+  const timeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
     ref.current?.focus()
+    return () => {
+      if (timeoutRef.current !== null) {
+        window.clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+    }
   }, [])
 
   const submit = () => {
+    if (submitting) return
     if (!input.trim()) return
+    setSubmitting(true)
     const ok = onSubmit(input)
-    if (!ok) {
-      setFeedback('wrong')
-      setInput('')
-      setTimeout(() => {
-        setFeedback(null)
-        ref.current?.focus()
-      }, 1200)
-    }
+    if (ok) return
+    setFeedback('wrong')
+    setInput('')
+    if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current)
+    timeoutRef.current = window.setTimeout(() => {
+      setFeedback(null)
+      setSubmitting(false)
+      ref.current?.focus()
+      timeoutRef.current = null
+    }, 1200)
   }
 
   const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.code === 'Enter') {
+    if ((e.code === 'Enter' || e.code === 'NumpadEnter') && !e.repeat) {
       e.preventDefault()
       submit()
     }
   }
 
+  const refocus = () => {
+    if (document.activeElement !== ref.current) ref.current?.focus()
+  }
+
   return (
-    <div className="passcode-dialog__backdrop">
+    <div className="passcode-dialog__backdrop" onMouseDown={refocus}>
       <div className="passcode-dialog" role="dialog" aria-modal="true">
         <div className="passcode-dialog__header">
           <span className="passcode-dialog__badge">EXIT</span>
@@ -64,6 +80,7 @@ export default function PasscodeDialog({ collected, onSubmit, onClose }: Props) 
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={onKey}
+          onBlur={() => window.setTimeout(refocus, 0)}
           placeholder="მაგ.: M A Z E"
           autoComplete="off"
           spellCheck={false}
@@ -79,7 +96,7 @@ export default function PasscodeDialog({ collected, onSubmit, onClose }: Props) 
           <button
             className="passcode-dialog__btn-primary"
             onClick={submit}
-            disabled={!input.trim() || feedback !== null}
+            disabled={!input.trim() || submitting}
           >
             გახსნა
           </button>

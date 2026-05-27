@@ -18,8 +18,14 @@ export default function WinScreen({
   onRestart,
 }: Props) {
   useEffect(() => {
-    try { applause.play() } catch {}
-    try { partyHorn.play() } catch {}
+    try {
+      const p = applause.play()
+      if (p && typeof p.catch === 'function') p.catch(() => {})
+    } catch {}
+    try {
+      const p = partyHorn.play()
+      if (p && typeof p.catch === 'function') p.catch(() => {})
+    } catch {}
   }, [])
 
   return (

@@ -315,6 +315,7 @@ export default function App() {
 
   const handlePasscodeSubmit = useCallback(
     (input: string): boolean => {
+      if (won) return true
       setPromptCount(p => p + 1)
       const ok = validatePasscode(input, collectedLetters)
       if (!ok) return false
@@ -324,7 +325,7 @@ export default function App() {
       setRunEndedAt(Date.now())
       return true
     },
-    [collectedLetters],
+    [collectedLetters, won],
   )
 
   const closePasscode = useCallback(() => setPasscodeOpen(false), [])
