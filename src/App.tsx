@@ -258,7 +258,7 @@ export default function App() {
   const attemptsLeft = useMemo(() => {
     if (!openDoor) return MAX_ATTEMPTS
     return MAX_ATTEMPTS - (wrongAttemptsRef.current.get(openDoor.id) ?? 0)
-  }, [openDoor, openDialogDoorId, world.doors])
+  }, [openDoor])
 
   const handleSubmit = useCallback(
     (answer: string): 'correct' | 'wrong' | 'cooldown' => {
