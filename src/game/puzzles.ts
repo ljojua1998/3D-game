@@ -41,6 +41,8 @@ export type StartRunResponse = {
   // Resume metadata
   resumed?: boolean
   elapsedMs?: number
+  // Ordered prize names; prizes[0] is awarded to rank 1, prizes[1] to rank 2…
+  prizes?: string[]
 }
 
 export type DoorSpec = StartRunResponse['doors'][number]

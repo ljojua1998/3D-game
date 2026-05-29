@@ -14,6 +14,7 @@ export type PromptMazeMessage =
       rank?: number | null
       totalCompleted?: number
     }
+  | { type: 'promptmaze:user-requested-restart' }
 
 export function emitToParent(payload: PromptMazeMessage): void {
   if (typeof window === 'undefined') return

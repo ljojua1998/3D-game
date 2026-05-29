@@ -148,6 +148,12 @@ export default function App() {
     loadSession()
   }, [loadSession])
 
+  // Win/Lose popup "restart" should hand control back to the embedding host so
+  // a new player can register, not silently start a same-user replay.
+  const requestRestartFromHost = useCallback(() => {
+    emitToParent({ type: 'promptmaze:user-requested-restart' })
+  }, [])
+
   const devUnlockAll = useCallback(() => {
     setWorld(w => ({
       ...w,
@@ -412,7 +418,8 @@ export default function App() {
           promptCount={promptCount}
           rank={finishResult?.rank ?? null}
           totalCompleted={finishResult?.totalCompleted}
-          onRestart={regenerate}
+          prizes={session?.prizes}
+          onRestart={requestRestartFromHost}
         />
       )}
       {lost && (
@@ -420,7 +427,7 @@ export default function App() {
           doorsUnlocked={world.doors.filter(d => d.status === 'unlocked').length}
           totalDoors={world.doors.length}
           promptCount={promptCount}
-          onRestart={regenerate}
+          onRestart={requestRestartFromHost}
         />
       )}
     </>

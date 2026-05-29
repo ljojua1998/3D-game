@@ -7,10 +7,12 @@ type Props = {
   promptCount: number
   rank?: number | null
   totalCompleted?: number
+  prizes?: string[]
   onRestart: () => void
 }
 
-export default function WinScreen({ elapsedMs, promptCount, rank, totalCompleted, onRestart }: Props) {
+export default function WinScreen({ elapsedMs, promptCount, rank, totalCompleted, prizes, onRestart }: Props) {
+  const prize = rank != null && Array.isArray(prizes) && prizes[rank - 1] ? prizes[rank - 1] : null
   useEffect(() => {
     try {
       const p = applause.play()
@@ -46,6 +48,31 @@ export default function WinScreen({ elapsedMs, promptCount, rank, totalCompleted
             </div>
           )}
         </div>
+        {prize && (
+          <div
+            style={{
+              background: 'rgba(255, 204, 51, 0.12)',
+              border: '1px solid rgba(255, 204, 51, 0.5)',
+              borderRadius: 6,
+              padding: '14px 18px',
+              marginBottom: 18,
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                letterSpacing: '0.22em',
+                color: 'rgba(255, 204, 51, 0.7)',
+                textTransform: 'uppercase',
+                marginBottom: 4,
+              }}
+            >
+              🏆 პრიზი
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#fc3' }}>{prize}</div>
+          </div>
+        )}
         <button className="win-screen__btn" onClick={onRestart}>
           თამაშის თავიდან დაწყება
         </button>

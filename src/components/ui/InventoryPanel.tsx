@@ -1,6 +1,23 @@
 import { useState } from 'react'
 import { ChatLanguage, InventoryItem } from '../../game/puzzles'
 
+// Treat URL strings (http(s):// or /) as image sources; everything else is
+// rendered literally (typically an emoji).
+function IconRender({ value }: { value: string }) {
+  const trimmed = (value || '').trim()
+  if (/^(https?:\/\/|\/)/i.test(trimmed)) {
+    return (
+      <img
+        src={trimmed}
+        alt=""
+        style={{ width: 22, height: 22, objectFit: 'contain' }}
+        loading="lazy"
+      />
+    )
+  }
+  return <>{trimmed}</>
+}
+
 type Props = {
   items: InventoryItem[]
   language: ChatLanguage
@@ -64,7 +81,9 @@ export default function InventoryPanel({
               type="button"
               disabled={busy}
             >
-              <span className="inventory-panel__icon">{it.icon}</span>
+              <span className="inventory-panel__icon">
+                <IconRender value={it.icon} />
+              </span>
               <span className="inventory-panel__label">{it.label[language]}</span>
             </button>
           )
