@@ -2,10 +2,10 @@ import { Dir } from './MazeGenerator'
 import { Coord } from './pathfinding'
 import { Turn } from './pathAnalysis'
 import { RNG } from './rng'
-import { SCENARIOS } from './scenarios'
 import { CELL_SIZE } from './constants'
+import { DoorDisplayConfig, DoorSpec, DoorType } from './puzzles'
 
-export type DoorStatus = 'locked' | 'cooldown' | 'answered' | 'unlocked'
+export type DoorStatus = 'locked' | 'unlocked'
 
 export type Door = {
   id: string
@@ -14,9 +14,8 @@ export type Door = {
   position: [number, number, number]
   orientation: 'horizontal' | 'vertical'
   status: DoorStatus
-  cooldownUntil: number
-  letter: string
-  scenarioId: string
+  type: DoorType
+  displayConfig: DoorDisplayConfig
 }
 
 const DIR_DX: Record<Dir, number> = { N: 0, S: 0, E: 1, W: -1 }
@@ -31,37 +30,38 @@ function shuffle<T>(rng: RNG, arr: T[]): T[] {
   return a
 }
 
-export function placeDoors(turns: Turn[], count: number, rng: RNG): Door[] {
-  if (turns.length === 0) return []
+export function placeDoors(
+  turns: Turn[],
+  doorSpecs: DoorSpec[],
+  rng: RNG,
+): Door[] {
+  if (turns.length === 0 || doorSpecs.length === 0) return []
+  const count = doorSpecs.length
+
   let chosen: Turn[]
   if (turns.length <= count) {
-    chosen = turns.slice()
+    chosen = turns.slice().sort((a, b) => a.index - b.index)
   } else {
-    chosen = shuffle(rng, turns).slice(0, count).sort((a, b) => a.index - b.index)
+    chosen = shuffle(rng, turns)
+      .slice(0, count)
+      .sort((a, b) => a.index - b.index)
   }
-  const scenarioPool = shuffle(rng, SCENARIOS).slice(0, chosen.length)
+
   return chosen.map((t, i) => {
-    const scen = scenarioPool[i]
+    const spec = doorSpecs[i]
     const wx = t.cell.x * CELL_SIZE
     const wy = t.cell.y * CELL_SIZE
     const ex = wx + DIR_DX[t.exitDir] * (CELL_SIZE / 2)
     const ey = wy + DIR_DY[t.exitDir] * (CELL_SIZE / 2)
     return {
-      id: `door-${t.cell.x}-${t.cell.y}-${t.exitDir}`,
+      id: spec.id,
       cell: t.cell,
       dir: t.exitDir,
       position: [ex, ey, 0],
       orientation: t.exitDir === 'N' || t.exitDir === 'S' ? 'horizontal' : 'vertical',
       status: 'locked',
-      cooldownUntil: 0,
-      letter: scen.letter,
-      scenarioId: scen.id,
+      type: spec.type,
+      displayConfig: spec.displayConfig,
     }
   })
-}
-
-export function checkAnswer(userText: string, accept: string[]): boolean {
-  const text = userText.toLowerCase().trim()
-  if (!text) return false
-  return accept.some(a => text.includes(a.toLowerCase().trim()))
 }

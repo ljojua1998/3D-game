@@ -1,12 +1,12 @@
 type Props = {
-  collectedCount: number
+  doorsUnlocked: number
   totalDoors: number
   promptCount: number
   onRestart: () => void
 }
 
 export default function LoseScreen({
-  collectedCount,
+  doorsUnlocked,
   totalDoors,
   promptCount,
   onRestart,
@@ -18,9 +18,9 @@ export default function LoseScreen({
         <div className="lose-screen__sub">10 წუთი ამოგეწურა</div>
         <div className="lose-screen__stats">
           <div className="lose-screen__stat">
-            <span className="lose-screen__stat-label">ასოები</span>
+            <span className="lose-screen__stat-label">კარები</span>
             <span className="lose-screen__stat-value">
-              {collectedCount}/{totalDoors}
+              {doorsUnlocked}/{totalDoors}
             </span>
           </div>
           <div className="lose-screen__stat">

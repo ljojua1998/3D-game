@@ -163,7 +163,7 @@ export default function MazeOverview({ grid, doors, onRegenerate }: Props) {
           <kbd>G</kbd> new maze
         </span>
         <span>
-          <kbd>T</kbd>/<kbd>U</kbd> talk/open
+          <kbd>T</kbd> talk
         </span>
         <span>
           <kbd>⇧U</kbd> dev unlock
@@ -181,12 +181,6 @@ export default function MazeOverview({ grid, doors, onRegenerate }: Props) {
         </span>
         <span>
           <span className="maze-minimap__swatch maze-minimap__swatch--door-locked" /> locked
-        </span>
-        <span>
-          <span className="maze-minimap__swatch maze-minimap__swatch--door-cooldown" /> cooldown
-        </span>
-        <span>
-          <span className="maze-minimap__swatch maze-minimap__swatch--door-answered" /> answered
         </span>
         <span>
           <span className="maze-minimap__swatch maze-minimap__swatch--door-unlocked" /> open

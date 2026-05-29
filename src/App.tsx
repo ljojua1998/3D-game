@@ -1,68 +1,66 @@
 import { Physics } from '@react-three/cannon'
 import { Stars } from '@react-three/drei'
-import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import PromptMazeDirector from './components/PromptMazeDirector'
 import FPSControls from './components/three/FPSControls'
 import GroundPlane from './components/three/GroundPlane'
 import Skydome from './components/three/Skydome'
 import MazeOverview from './components/maze/MazeOverview'
-import PasscodeHUD from './components/ui/PasscodeHUD'
 import ProximityPrompt from './components/ui/ProximityPrompt'
-import ScenarioDialog from './components/ui/ScenarioDialog'
-import PasscodeDialog from './components/ui/PasscodeDialog'
-import RunStatsHUD, { RUN_DURATION_MS } from './components/ui/RunStatsHUD'
+import ChatDialog from './components/ui/ChatDialog'
+import RunStatsHUD, { DEFAULT_RUN_DURATION_MS } from './components/ui/RunStatsHUD'
 import WinScreen from './components/ui/WinScreen'
 import LoseScreen from './components/ui/LoseScreen'
 import { generateMaze, MazeGrid } from './game/MazeGenerator'
 import { shortestPath } from './game/pathfinding'
 import { getTurns } from './game/pathAnalysis'
-import { Door, checkAnswer, placeDoors } from './game/doors'
-import { ExitGate, computeExitGate, validatePasscode } from './game/exitGate'
-import { Scenario, SCENARIOS } from './game/scenarios'
+import { Door, placeDoors } from './game/doors'
 import { syncGameState } from './game/gameState'
 import { playerState } from './game/playerState'
 import { mulberry32 } from './game/rng'
+import { finishRun, startRun } from './ai/chatClient'
+import { emitToParent } from './ai/postMessage'
+import {
+  ChatLanguage,
+  DoorSpec,
+  FinishRunResponse,
+  InventoryItem,
+  StartRunResponse,
+} from './game/puzzles'
+import { CELL_SIZE } from './game/constants'
 import { MAZE_HEIGHT, MAZE_SEED, MAZE_WIDTH } from './config'
 import { FOG_COLOR } from './theme'
 
-const DOOR_COUNT = 4
 const MIN_TURNS = 3
 const PROXIMITY_RADIUS = 2.0
-const GATE_PROXIMITY_RADIUS = 2.2
-const MAX_ATTEMPTS = 3
-const COOLDOWN_MS = 5000
+const END_RADIUS = 1.2
 
-function generateValidMaze(): MazeGrid {
-  let g = generateMaze(MAZE_WIDTH, MAZE_HEIGHT, MAZE_SEED)
-  if (MAZE_SEED !== null) return g
+function generateValidMaze(width: number, height: number, seedOverride?: number | null): MazeGrid {
+  // If the backend gave us a persisted seed (resume path), use it directly so
+  // the maze layout matches the run that's already in progress.
+  const effectiveSeed = seedOverride != null ? seedOverride : MAZE_SEED
+  let g = generateMaze(width, height, effectiveSeed)
+  if (effectiveSeed !== null) return g
   for (let i = 0; i < 50; i++) {
     const turns = getTurns(shortestPath(g), g)
     if (turns.length >= MIN_TURNS) return g
-    g = generateMaze(MAZE_WIDTH, MAZE_HEIGHT, null)
+    g = generateMaze(width, height, null)
   }
   return g
 }
 
-function computeDoors(grid: MazeGrid): Door[] {
+function computeDoors(grid: MazeGrid, doorSpecs: DoorSpec[]): Door[] {
   const path = shortestPath(grid)
   const turns = getTurns(path, grid)
   const rng = mulberry32(grid.seed)
-  return placeDoors(turns, DOOR_COUNT, rng)
+  return placeDoors(turns, doorSpecs, rng)
 }
 
 type WorldState = {
-  grid: MazeGrid
+  grid: MazeGrid | null
   doors: Door[]
-  gate: ExitGate
 }
-
-function freshWorld(): WorldState {
-  const grid = generateValidMaze()
-  return { grid, doors: computeDoors(grid), gate: computeExitGate(grid) }
-}
-
-const SCENARIO_BY_ID = new Map(SCENARIOS.map(s => [s.id, s]))
 
 export default function App() {
   const contactMaterial = {
@@ -70,93 +68,165 @@ export default function App() {
     friction: 0.001,
   }
 
-  const [world, setWorld] = useState<WorldState>(freshWorld)
+  const [world, setWorld] = useState<WorldState>({ grid: null, doors: [] })
+  const [session, setSession] = useState<StartRunResponse | null>(null)
+  const [sessionError, setSessionError] = useState<string | null>(null)
+  const [language, setLanguage] = useState<ChatLanguage>('ka')
   const [minimapVisible, setMinimapVisible] = useState(false)
-  const [collectedLetters, setCollectedLetters] = useState<string[]>([])
   const [nearbyDoorId, setNearbyDoorId] = useState<string | null>(null)
-  const [nearbyGate, setNearbyGate] = useState(false)
   const [openDialogDoorId, setOpenDialogDoorId] = useState<string | null>(null)
-  const [passcodeOpen, setPasscodeOpen] = useState(false)
   const [won, setWon] = useState(false)
   const [lost, setLost] = useState(false)
   const [runStartedAt, setRunStartedAt] = useState(() => Date.now())
   const [runEndedAt, setRunEndedAt] = useState<number | null>(null)
   const [promptCount, setPromptCount] = useState(0)
-  const wrongAttemptsRef = useRef<Map<string, number>>(new Map())
+  const [finishResult, setFinishResult] = useState<FinishRunResponse | null>(null)
+  const sessionRequestRef = useRef(0)
+  const finishGuardRef = useRef(false)
+  const readyEmittedRef = useRef(false)
 
-  const hasAllLetters =
-    world.doors.length > 0 && collectedLetters.length === world.doors.length
+  // Resolve maze / duration / language from backend response, with safe fallbacks
+  const mazeWidth = session?.maze?.width ?? MAZE_WIDTH
+  const mazeHeight = session?.maze?.height ?? MAZE_HEIGHT
+  const runDurationMs = session?.runDurationMs ?? DEFAULT_RUN_DURATION_MS
+
+  const loadSession = useCallback(() => {
+    const reqId = ++sessionRequestRef.current
+    setSession(null)
+    setSessionError(null)
+    setFinishResult(null)
+    finishGuardRef.current = false
+    startRun()
+      .then(s => {
+        if (sessionRequestRef.current !== reqId) return
+        setSession(s)
+        if (s.defaultLanguage) setLanguage(s.defaultLanguage)
+        const grid = generateValidMaze(
+          s.maze?.width ?? MAZE_WIDTH,
+          s.maze?.height ?? MAZE_HEIGHT,
+          s.mazeSeed ?? null,
+        )
+        // Apply any per-door unlock flags from a resumed session.
+        const placed = computeDoors(grid, s.doors)
+        const unlockedFromServer = new Map(
+          s.doors.map(d => [d.id, Boolean(d.unlocked)] as const),
+        )
+        const doors = placed.map(d =>
+          unlockedFromServer.get(d.id)
+            ? { ...d, status: 'unlocked' as const }
+            : d,
+        )
+        setWorld({ grid, doors })
+        // Resume: anchor startedAt so the HUD ticks down from the correct
+        // remaining time.
+        const elapsedMs = s.resumed && typeof s.elapsedMs === 'number' ? s.elapsedMs : 0
+        setRunStartedAt(Date.now() - elapsedMs)
+        emitToParent({ type: 'promptmaze:run-started', sessionId: s.sessionId })
+      })
+      .catch(err => {
+        if (sessionRequestRef.current !== reqId) return
+        setSessionError(String(err))
+      })
+  }, [])
+
+  useEffect(() => {
+    if (!readyEmittedRef.current) {
+      readyEmittedRef.current = true
+      emitToParent({ type: 'promptmaze:ready' })
+    }
+    loadSession()
+  }, [loadSession])
 
   const regenerate = useCallback(() => {
-    setWorld(freshWorld())
-    setCollectedLetters([])
+    setWorld({ grid: null, doors: [] })
     setOpenDialogDoorId(null)
     setNearbyDoorId(null)
-    setNearbyGate(false)
-    setPasscodeOpen(false)
     setWon(false)
     setLost(false)
-    setRunStartedAt(Date.now())
     setRunEndedAt(null)
     setPromptCount(0)
-    wrongAttemptsRef.current = new Map()
-  }, [])
+    loadSession()
+  }, [loadSession])
 
   const devUnlockAll = useCallback(() => {
     setWorld(w => ({
       ...w,
-      doors: w.doors.map(d => ({ ...d, status: 'unlocked', cooldownUntil: 0 })),
+      doors: w.doors.map(d => ({ ...d, status: 'unlocked' })),
     }))
-    setCollectedLetters(world.doors.map(d => d.letter))
-  }, [world.doors])
+  }, [])
 
   useEffect(() => {
-    syncGameState({ doors: world.doors, collectedLetters, won })
-  }, [world.doors, collectedLetters, won])
+    syncGameState({ doors: world.doors, won })
+  }, [world.doors, won])
+
+  // Reports the run as finished to the backend + the embedding host.
+  // Guards against double-fire (both win-trigger and time-expiry can race).
+  const reportFinish = useCallback(
+    async (completed: boolean, endedAt: number) => {
+      if (finishGuardRef.current) return
+      if (!session) return
+      finishGuardRef.current = true
+
+      const elapsedMs = endedAt - runStartedAt
+      let result: FinishRunResponse | null = null
+      try {
+        result = await finishRun({
+          sessionId: session.sessionId,
+          elapsedMs,
+          promptCount,
+          completed,
+        })
+      } catch (err) {
+        // Backend unreachable / network error — log but still emit postMessage
+        // eslint-disable-next-line no-console
+        console.warn('[promptmaze] finishRun failed:', err)
+      }
+      setFinishResult(result)
+      emitToParent({
+        type: 'promptmaze:run-finished',
+        sessionId: session.sessionId,
+        elapsedMs,
+        promptCount,
+        completed,
+        rank: result?.rank ?? null,
+        totalCompleted: result?.totalCompleted ?? 0,
+      })
+    },
+    [session, runStartedAt, promptCount],
+  )
 
   useEffect(() => {
     if (won || lost) return
+    if (!world.grid) return
     const id = setInterval(() => {
-      if (Date.now() >= runStartedAt + RUN_DURATION_MS) {
+      if (Date.now() >= runStartedAt + runDurationMs) {
+        const endedAt = runStartedAt + runDurationMs
         setLost(true)
+        setRunEndedAt(endedAt)
         setOpenDialogDoorId(null)
-        setPasscodeOpen(false)
         if (document.pointerLockElement === document.body) document.exitPointerLock()
+        void reportFinish(false, endedAt)
       }
     }, 250)
     return () => clearInterval(id)
-  }, [won, lost, runStartedAt])
+  }, [won, lost, runStartedAt, runDurationMs, world.grid, reportFinish])
 
   useEffect(() => {
+    if (!world.grid) return
     const path = shortestPath(world.grid)
     const turns = getTurns(path, world.grid)
     console.log(
-      `[maze] seed=${world.grid.seed} size=${world.grid.width}x${world.grid.height} path_len=${path.length} decisive_turns=${turns.length} doors=${world.doors.length} letters=[${world.doors.map(d => d.letter).join(',')}]`,
+      `[maze] seed=${world.grid.seed} size=${world.grid.width}x${world.grid.height} path_len=${path.length} decisive_turns=${turns.length} doors=${world.doors.length}`,
     )
   }, [world])
 
-  // Proximity loop + cooldown auto-expire
+  // Proximity loop: nearest door + end-cell win trigger
   useEffect(() => {
+    if (!world.grid) return
     let raf = 0
+    const endX = world.grid.end.x * CELL_SIZE
+    const endY = world.grid.end.y * CELL_SIZE
     const loop = () => {
-      const now = Date.now()
-
-      const hasExpired = world.doors.some(
-        d => d.status === 'cooldown' && d.cooldownUntil <= now,
-      )
-      if (hasExpired) {
-        setWorld(w => ({
-          ...w,
-          doors: w.doors.map(d => {
-            if (d.status === 'cooldown' && d.cooldownUntil <= now) {
-              wrongAttemptsRef.current.delete(d.id)
-              return { ...d, status: 'locked', cooldownUntil: 0 }
-            }
-            return d
-          }),
-        }))
-      }
-
       let closest: string | null = null
       let minDist = PROXIMITY_RADIUS
       for (const d of world.doors) {
@@ -171,17 +241,29 @@ export default function App() {
       }
       setNearbyDoorId(prev => (prev === closest ? prev : closest))
 
-      const gdx = playerState.x - world.gate.position[0]
-      const gdy = playerState.y - world.gate.position[1]
-      const gateDist = Math.sqrt(gdx * gdx + gdy * gdy)
-      const near = !world.gate.unlocked && gateDist < GATE_PROXIMITY_RADIUS
-      setNearbyGate(prev => (prev === near ? prev : near))
+      if (!won && !lost && world.doors.length > 0) {
+        const allUnlocked = world.doors.every(d => d.status === 'unlocked')
+        if (allUnlocked) {
+          const dx = playerState.x - endX
+          const dy = playerState.y - endY
+          if (Math.sqrt(dx * dx + dy * dy) < END_RADIUS) {
+            const endedAt = Date.now()
+            setWon(true)
+            setRunEndedAt(endedAt)
+            setOpenDialogDoorId(null)
+            if (document.pointerLockElement === document.body) {
+              document.exitPointerLock()
+            }
+            void reportFinish(true, endedAt)
+          }
+        }
+      }
 
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
-  }, [world.doors, world.gate])
+  }, [world.doors, world.grid, won, lost, reportFinish])
 
   useEffect(() => {
     const isInputTarget = (t: EventTarget | null) =>
@@ -192,11 +274,6 @@ export default function App() {
         if (openDialogDoorId) {
           e.preventDefault()
           setOpenDialogDoorId(null)
-          return
-        }
-        if (passcodeOpen) {
-          e.preventDefault()
-          setPasscodeOpen(false)
           return
         }
       }
@@ -210,143 +287,73 @@ export default function App() {
       } else if (e.code === 'KeyU' && e.shiftKey) {
         devUnlockAll()
       } else if (e.code === 'KeyT') {
-        if (openDialogDoorId || passcodeOpen || !nearbyDoorId) return
+        if (openDialogDoorId || !nearbyDoorId) return
         const d = world.doors.find(x => x.id === nearbyDoorId)
         if (!d || d.status !== 'locked') return
         e.preventDefault()
         if (document.pointerLockElement === document.body) document.exitPointerLock()
         setOpenDialogDoorId(nearbyDoorId)
-      } else if (e.code === 'KeyU' && !e.shiftKey) {
-        if (passcodeOpen) return
-        const targetDoorId = openDialogDoorId ?? nearbyDoorId
-        if (!targetDoorId) return
-        const d = world.doors.find(x => x.id === targetDoorId)
-        if (!d || d.status !== 'answered') return
-        e.preventDefault()
-        setWorld(w => ({
-          ...w,
-          doors: w.doors.map(x =>
-            x.id === d.id ? { ...x, status: 'unlocked', cooldownUntil: 0 } : x,
-          ),
-        }))
-        setCollectedLetters(prev => [...prev, d.letter])
-        if (openDialogDoorId) {
-          setOpenDialogDoorId(null)
-          if (document.pointerLockElement !== document.body) {
-            try {
-              const req = document.body.requestPointerLock() as unknown as
-                | Promise<void>
-                | undefined
-              if (req && typeof req.then === 'function') req.catch(() => {})
-            } catch {}
-          }
-        }
-      } else if (e.code === 'KeyE') {
-        if (openDialogDoorId || passcodeOpen) return
-        if (!nearbyGate || !hasAllLetters || world.gate.unlocked) return
-        e.preventDefault()
-        if (document.pointerLockElement === document.body) document.exitPointerLock()
-        setPasscodeOpen(true)
       }
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [
-    regenerate,
-    devUnlockAll,
-    nearbyDoorId,
-    openDialogDoorId,
-    passcodeOpen,
-    nearbyGate,
-    hasAllLetters,
-    world.doors,
-    world.gate.unlocked,
-    won,
-    lost,
-  ])
+  }, [regenerate, devUnlockAll, nearbyDoorId, openDialogDoorId, world.doors, won, lost])
 
   const openDoor = openDialogDoorId
     ? world.doors.find(d => d.id === openDialogDoorId) ?? null
     : null
-  const openScenario: Scenario | null = openDoor
-    ? SCENARIO_BY_ID.get(openDoor.scenarioId) ?? null
-    : null
-  const attemptsLeft = useMemo(() => {
-    if (!openDoor) return MAX_ATTEMPTS
-    return MAX_ATTEMPTS - (wrongAttemptsRef.current.get(openDoor.id) ?? 0)
-  }, [openDoor])
 
-  const handleSubmit = useCallback(
-    (answer: string): 'correct' | 'wrong' | 'cooldown' => {
-      if (!openDoor || !openScenario) return 'wrong'
-      setPromptCount(p => p + 1)
-      const correct = checkAnswer(answer, openScenario.accept)
-      if (correct) {
-        setWorld(w => ({
-          ...w,
-          doors: w.doors.map(d =>
-            d.id === openDoor.id ? { ...d, status: 'answered' } : d,
-          ),
-        }))
-        wrongAttemptsRef.current.delete(openDoor.id)
-        return 'correct'
-      }
-      const cur = wrongAttemptsRef.current.get(openDoor.id) ?? 0
-      const newCount = cur + 1
-      if (newCount >= MAX_ATTEMPTS) {
-        wrongAttemptsRef.current.delete(openDoor.id)
-        setWorld(w => ({
-          ...w,
-          doors: w.doors.map(d =>
-            d.id === openDoor.id
-              ? { ...d, status: 'cooldown', cooldownUntil: Date.now() + COOLDOWN_MS }
-              : d,
-          ),
-        }))
-        return 'cooldown'
-      }
-      wrongAttemptsRef.current.set(openDoor.id, newCount)
-      return 'wrong'
-    },
-    [openDoor, openScenario],
-  )
+  const handlePromptSent = useCallback(() => setPromptCount(p => p + 1), [])
+
+  const handleDoorUnlocked = useCallback(() => {
+    if (!openDialogDoorId) return
+    const id = openDialogDoorId
+    setWorld(w => ({
+      ...w,
+      doors: w.doors.map(d => (d.id === id ? { ...d, status: 'unlocked' } : d)),
+    }))
+    setOpenDialogDoorId(null)
+    if (document.pointerLockElement !== document.body) {
+      try {
+        const req = document.body.requestPointerLock() as unknown as
+          | Promise<void>
+          | undefined
+        if (req && typeof req.then === 'function') req.catch(() => {})
+      } catch {}
+    }
+  }, [openDialogDoorId])
 
   const closeDialog = useCallback(() => setOpenDialogDoorId(null), [])
-
-  const handlePasscodeSubmit = useCallback(
-    (input: string): boolean => {
-      if (won) return true
-      setPromptCount(p => p + 1)
-      const ok = validatePasscode(input, collectedLetters)
-      if (!ok) return false
-      setWorld(w => ({ ...w, gate: { ...w.gate, unlocked: true } }))
-      setPasscodeOpen(false)
-      setWon(true)
-      setRunEndedAt(Date.now())
-      return true
-    },
-    [collectedLetters, won],
-  )
-
-  const closePasscode = useCallback(() => setPasscodeOpen(false), [])
 
   const nearbyDoor = nearbyDoorId
     ? world.doors.find(d => d.id === nearbyDoorId) ?? null
     : null
-  const promptStatus = nearbyDoor && !openDialogDoorId && !passcodeOpen
-    ? nearbyDoor.status === 'locked' ||
-      nearbyDoor.status === 'answered' ||
-      nearbyDoor.status === 'cooldown'
-      ? nearbyDoor.status
+  const promptStatus = nearbyDoor && !openDialogDoorId
+    ? nearbyDoor.status === 'locked'
+      ? 'locked'
       : null
     : null
 
-  const gatePromptKind: 'ready' | 'locked' | null =
-    nearbyGate && !passcodeOpen && !openDialogDoorId
-      ? hasAllLetters
-        ? 'ready'
-        : 'locked'
-      : null
+  const inventoryItems: InventoryItem[] = session?.inventoryItems ?? []
+  const allowLanguageToggle = session?.allowLanguageToggle ?? true
+
+  if (!world.grid) {
+    return (
+      <div className="session-loading">
+        {sessionError ? (
+          <div className="session-banner session-banner--error">
+            Server not reachable: {sessionError}
+          </div>
+        ) : (
+          <div className="session-banner">Loading game…</div>
+        )}
+      </div>
+    )
+  }
+
+  // Silence unused-import warning when MAZE_WIDTH/HEIGHT serve only as fallback
+  void mazeWidth
+  void mazeHeight
 
   return (
     <>
@@ -367,57 +374,50 @@ export default function App() {
           <PhysicsWorld
             grid={world.grid}
             doors={world.doors}
-            gate={world.gate}
             nearbyDoorId={nearbyDoorId}
-            nearbyGate={nearbyGate}
-            hasAllLetters={hasAllLetters}
           />
         </Physics>
       </Canvas>
-      <PasscodeHUD totalSlots={world.doors.length} collected={collectedLetters} />
       <RunStatsHUD
         startedAt={runStartedAt}
         endedAt={runEndedAt}
         promptCount={promptCount}
+        durationMs={runDurationMs}
         lost={lost}
       />
-      <ProximityPrompt
-        status={promptStatus}
-        cooldownUntil={nearbyDoor?.cooldownUntil}
-        letter={nearbyDoor?.letter}
-        gateKind={gatePromptKind}
-      />
+      <ProximityPrompt status={promptStatus} />
       {minimapVisible && (
         <MazeOverview grid={world.grid} doors={world.doors} onRegenerate={regenerate} />
       )}
-      {openDoor && openScenario && (
-        <ScenarioDialog
-          door={openDoor}
-          scenario={openScenario}
-          attemptsLeft={attemptsLeft}
-          onSubmit={handleSubmit}
-          onClose={closeDialog}
-        />
+      {sessionError && !session && (
+        <div className="session-banner session-banner--error">
+          Server not reachable: {sessionError}
+        </div>
       )}
-      {passcodeOpen && (
-        <PasscodeDialog
-          collected={collectedLetters}
-          onSubmit={handlePasscodeSubmit}
-          onClose={closePasscode}
+      {openDoor && session && (
+        <ChatDialog
+          door={openDoor}
+          sessionId={session.sessionId}
+          inventoryItems={inventoryItems}
+          language={language}
+          onLanguageChange={allowLanguageToggle ? setLanguage : () => {}}
+          onPromptSent={handlePromptSent}
+          onUnlocked={handleDoorUnlocked}
+          onClose={closeDialog}
         />
       )}
       {won && runEndedAt !== null && (
         <WinScreen
-          passcode={collectedLetters.join(' ')}
-          doorsUnlocked={world.doors.filter(d => d.status === 'unlocked').length}
           elapsedMs={runEndedAt - runStartedAt}
           promptCount={promptCount}
+          rank={finishResult?.rank ?? null}
+          totalCompleted={finishResult?.totalCompleted}
           onRestart={regenerate}
         />
       )}
       {lost && (
         <LoseScreen
-          collectedCount={collectedLetters.length}
+          doorsUnlocked={world.doors.filter(d => d.status === 'unlocked').length}
           totalDoors={world.doors.length}
           promptCount={promptCount}
           onRestart={regenerate}
@@ -430,17 +430,11 @@ export default function App() {
 export function PhysicsWorld({
   grid,
   doors,
-  gate,
   nearbyDoorId,
-  nearbyGate,
-  hasAllLetters,
 }: {
   grid: MazeGrid
   doors: Door[]
-  gate: ExitGate
   nearbyDoorId: string | null
-  nearbyGate: boolean
-  hasAllLetters: boolean
 }) {
   const setPaused = (paused: boolean) => {
     if (paused) document.getElementById('pause')!.classList.add('visible')
@@ -456,10 +450,7 @@ export function PhysicsWorld({
       <PromptMazeDirector
         grid={grid}
         doors={doors}
-        gate={gate}
         nearbyDoorId={nearbyDoorId}
-        nearbyGate={nearbyGate}
-        hasAllLetters={hasAllLetters}
       />
     </Suspense>
   )

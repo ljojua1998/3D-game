@@ -3,20 +3,14 @@ import { applause, partyHorn } from '../../helpers/sound'
 import { formatElapsed } from './RunStatsHUD'
 
 type Props = {
-  passcode: string
-  doorsUnlocked: number
   elapsedMs: number
   promptCount: number
+  rank?: number | null
+  totalCompleted?: number
   onRestart: () => void
 }
 
-export default function WinScreen({
-  passcode,
-  doorsUnlocked,
-  elapsedMs,
-  promptCount,
-  onRestart,
-}: Props) {
+export default function WinScreen({ elapsedMs, promptCount, rank, totalCompleted, onRestart }: Props) {
   useEffect(() => {
     try {
       const p = applause.play()
@@ -42,14 +36,15 @@ export default function WinScreen({
             <span className="win-screen__stat-label">prompts</span>
             <span className="win-screen__stat-value">{promptCount}</span>
           </div>
-          <div className="win-screen__stat">
-            <span className="win-screen__stat-label">passcode</span>
-            <span className="win-screen__stat-value">{passcode}</span>
-          </div>
-          <div className="win-screen__stat">
-            <span className="win-screen__stat-label">გახსნილი კარები</span>
-            <span className="win-screen__stat-value">{doorsUnlocked}</span>
-          </div>
+          {rank != null && (
+            <div className="win-screen__stat">
+              <span className="win-screen__stat-label">rank</span>
+              <span className="win-screen__stat-value">
+                #{rank}
+                {totalCompleted ? ` / ${totalCompleted}` : ''}
+              </span>
+            </div>
+          )}
         </div>
         <button className="win-screen__btn" onClick={onRestart}>
           თამაშის თავიდან დაწყება

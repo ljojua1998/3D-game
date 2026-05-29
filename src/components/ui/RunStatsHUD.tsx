@@ -1,11 +1,14 @@
 import { useEffect, useReducer } from 'react'
 
-export const RUN_DURATION_MS = 10 * 60 * 1000
+// Legacy fallback — used only when App.tsx is in mock mode and gets no run
+// duration back from the session response. Real runs come from the backend.
+export const DEFAULT_RUN_DURATION_MS = 10 * 60 * 1000
 
 type Props = {
   startedAt: number
   endedAt: number | null
   promptCount: number
+  durationMs: number
   lost?: boolean
 }
 
@@ -16,7 +19,13 @@ export function formatElapsed(ms: number): string {
   return `${mm}:${ss}`
 }
 
-export default function RunStatsHUD({ startedAt, endedAt, promptCount, lost }: Props) {
+export default function RunStatsHUD({
+  startedAt,
+  endedAt,
+  promptCount,
+  durationMs,
+  lost,
+}: Props) {
   const [, force] = useReducer((s: number) => s + 1, 0)
 
   useEffect(() => {
@@ -26,7 +35,7 @@ export default function RunStatsHUD({ startedAt, endedAt, promptCount, lost }: P
   }, [endedAt, lost])
 
   const now = endedAt ?? Date.now()
-  const remaining = Math.max(0, startedAt + RUN_DURATION_MS - now)
+  const remaining = Math.max(0, startedAt + durationMs - now)
   const finished = endedAt !== null
   const expired = remaining === 0
 
