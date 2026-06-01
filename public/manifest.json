@@ -3,7 +3,7 @@
   "name": "3d-Game CROCOMIND",
   "icons": [
     {
-      "src": "algernon.svg",
+      "src": "squad-maze.svg",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/svg"
     }

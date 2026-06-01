@@ -1,12 +1,12 @@
-# 3D-game
+# Squad Maze
 
-A first-person 3D maze game built with React, Three.js and a physics engine.
-You spawn in a small room, follow scripted corridors, and then descend into a
-procedurally generated infinite maze.
+A first-person 3D maze game widget built with React, Three.js and a physics
+engine. Embedded as an iframe inside the Squad Quiz admin app for booth-style
+gameplay: players register, descend into a procedurally generated maze with
+AI-guarded doors, and race the timer to the exit.
 
-Based on [Algernon](https://github.com/nathanbabcock/algernon) by Nathan Babcock,
-modernized to a current toolchain (React 18, `@react-three/fiber` 8,
-`@react-three/drei` 9, `@react-three/cannon` 6, three.js 0.169, Electron 33).
+Tooling: React 18, `@react-three/fiber` 8, `@react-three/drei` 9,
+`@react-three/cannon` 6, three.js 0.169, Electron 33.
 
 ![Thumbnail](/public/thumbnail.png)
 
@@ -106,8 +106,3 @@ src/
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the maze system works
 and which knobs to turn to make it longer, bigger, or add new rooms.
-
-## Credits
-
-Original game: **Algernon** by Nathan Babcock (`excalo`).
-This repository is a modernized fork used as a base for a new game.

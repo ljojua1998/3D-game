@@ -102,8 +102,7 @@ provider, model, or vendor.
 
 ## 3. Where to find everything
 
-Inside the widget repo (`C:\Users\ljojua\Desktop\AI-Team\algernon`, or
-whatever path it lives at):
+Inside the widget repo (squad-maze):
 
 | File | What it gives you |
 |---|---|
