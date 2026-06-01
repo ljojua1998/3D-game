@@ -82,7 +82,7 @@ export default function App() {
   const [promptCount, setPromptCount] = useState(0)
   const [finishResult, setFinishResult] = useState<FinishRunResponse | null>(null)
   const sessionRequestRef = useRef(0)
-  const finishGuardRef = useRef(false)
+  const finishedSessionsRef = useRef(new Set<string>())
   const readyEmittedRef = useRef(false)
 
   // Resolve maze / duration / language from backend response, with safe fallbacks
@@ -95,7 +95,6 @@ export default function App() {
     setSession(null)
     setSessionError(null)
     setFinishResult(null)
-    finishGuardRef.current = false
     startRun()
       .then(s => {
         if (sessionRequestRef.current !== reqId) return
@@ -169,9 +168,9 @@ export default function App() {
   // Guards against double-fire (both win-trigger and time-expiry can race).
   const reportFinish = useCallback(
     async (completed: boolean, endedAt: number) => {
-      if (finishGuardRef.current) return
       if (!session) return
-      finishGuardRef.current = true
+      if (finishedSessionsRef.current.has(session.sessionId)) return
+      finishedSessionsRef.current.add(session.sessionId)
 
       const elapsedMs = endedAt - runStartedAt
       let result: FinishRunResponse | null = null
@@ -216,15 +215,6 @@ export default function App() {
     }, 250)
     return () => clearInterval(id)
   }, [won, lost, runStartedAt, runDurationMs, world.grid, reportFinish])
-
-  useEffect(() => {
-    if (!world.grid) return
-    const path = shortestPath(world.grid)
-    const turns = getTurns(path, world.grid)
-    console.log(
-      `[maze] seed=${world.grid.seed} size=${world.grid.width}x${world.grid.height} path_len=${path.length} decisive_turns=${turns.length} doors=${world.doors.length}`,
-    )
-  }, [world])
 
   // Proximity loop: nearest door + end-cell win trigger
   useEffect(() => {

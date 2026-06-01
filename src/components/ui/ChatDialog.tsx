@@ -23,7 +23,7 @@ type Props = {
 
 const COPY = {
   ka: {
-    placeholder: 'დაუსვი კითხვა AI-ს... (Enter გასაგზავნად)',
+    placeholder: (persona: string) => `დაუსვი კითხვა ${persona}-ს... (Enter გასაგზავნად)`,
     send: 'გაგზავნა',
     close: 'დახურვა',
     guessLabel: 'საიდუმლო სიტყვა',
@@ -36,7 +36,7 @@ const COPY = {
     unlocked: '✓ კარი გაიხსნა',
   },
   en: {
-    placeholder: 'Ask the AI a question... (Enter to send)',
+    placeholder: (persona: string) => `Ask ${persona} a question... (Enter to send)`,
     send: 'Send',
     close: 'Close',
     guessLabel: 'Secret word',
@@ -284,7 +284,7 @@ export default function ChatDialog({
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={onTextareaKey}
-              placeholder={c.placeholder}
+              placeholder={c.placeholder(door.displayConfig.persona[language])}
               rows={2}
               disabled={streaming || unlocked}
             />

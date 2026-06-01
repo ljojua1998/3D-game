@@ -6,6 +6,7 @@ export type { StreamChatHandlers } from './httpClient'
 
 function isMockMode(): boolean {
   if (typeof window === 'undefined') return true
+  if (process.env.NODE_ENV === 'production') return false
   const params = new URLSearchParams(window.location.search)
   if (params.get('mock') === '1') return true
   if (params.has('apiBase')) return false
@@ -13,11 +14,6 @@ function isMockMode(): boolean {
 }
 
 const impl = isMockMode() ? mockClient : httpClient
-
-if (typeof window !== 'undefined') {
-  // eslint-disable-next-line no-console
-  console.log(`[promptmaze] ai client mode: ${isMockMode() ? 'mock' : 'http'}`)
-}
 
 export function startRun(): Promise<StartRunResponse> {
   return impl.startRun()
