@@ -30,7 +30,7 @@ const COPY = {
     guessPlaceholder: 'ჩაწერე ჩაფიქრებული სიტყვა',
     submitGuess: 'სიტყვის გაგზავნა',
     openInventory: 'ხელსაწყოების არჩევა',
-    thinking: 'AI ფიქრობს...',
+    thinking: (persona: string) => `${persona} ფიქრობს...`,
     wrongGuess: '✗ არასწორი სიტყვა',
     error: 'შეცდომა AI-სთან კავშირში',
     unlocked: '✓ კარი გაიხსნა',
@@ -43,7 +43,7 @@ const COPY = {
     guessPlaceholder: 'Type the secret word',
     submitGuess: 'Submit word',
     openInventory: 'Pick tools',
-    thinking: 'AI is thinking...',
+    thinking: (persona: string) => `${persona} is thinking...`,
     wrongGuess: '✗ Wrong word',
     error: 'Error contacting the AI',
     unlocked: '✓ Door unlocked',
@@ -268,7 +268,9 @@ export default function ChatDialog({
             </div>
           ))}
           {streaming && messages[messages.length - 1]?.text === '' && (
-            <div className="chat-dialog__hint-line">{c.thinking}</div>
+            <div className="chat-dialog__hint-line">
+              {c.thinking(door.displayConfig.persona[language])}
+            </div>
           )}
           {error && <div className="chat-dialog__error">{c.error}: {error}</div>}
           {unlocked && <div className="chat-dialog__unlocked">{c.unlocked}</div>}
