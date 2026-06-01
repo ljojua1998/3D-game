@@ -5,6 +5,7 @@
 export type PromptMazeMessage =
   | { type: 'promptmaze:ready' }
   | { type: 'promptmaze:run-started'; sessionId: string }
+  | { type: 'promptmaze:resume-failed' }
   | {
       type: 'promptmaze:run-finished'
       sessionId: string

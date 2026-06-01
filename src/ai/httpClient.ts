@@ -70,7 +70,14 @@ export async function startRun(): Promise<StartRunResponse> {
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(body),
   })
-  if (!res.ok) throw new Error(`startRun: HTTP ${res.status}`)
+  if (!res.ok) {
+    // Attach status to the error so the caller can branch (e.g. 410
+    // resume_invalidated triggers a postMessage to the host so it drops
+    // the URL sessionId and shows the registration form).
+    const err = new Error(`startRun: HTTP ${res.status}`) as Error & { status?: number }
+    err.status = res.status
+    throw err
+  }
   return res.json()
 }
 

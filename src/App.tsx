@@ -124,6 +124,11 @@ export default function App() {
       })
       .catch(err => {
         if (sessionRequestRef.current !== reqId) return
+        // If backend rejected the resumed session, tell the host to drop the
+        // URL sessionId and fall back to the registration form.
+        if ((err as { status?: number }).status === 410) {
+          emitToParent({ type: 'promptmaze:resume-failed' })
+        }
         setSessionError(String(err))
       })
   }, [])
@@ -192,7 +197,10 @@ export default function App() {
         sessionId: session.sessionId,
         elapsedMs,
         promptCount,
-        completed,
+        // Prefer server's authoritative completed flag (server overrides
+        // based on `allUnlocked`). Falls back to local guess if the request
+        // failed and no response was received.
+        completed: result?.completed ?? completed,
         rank: result?.rank ?? null,
         totalCompleted: result?.totalCompleted ?? 0,
       })
