@@ -34,6 +34,7 @@ function readStartContext(): {
   acceptedTerms?: boolean
   clientSeed?: string
   sessionId?: string
+  isPreview?: boolean
 } {
   if (typeof window === 'undefined') return {}
   const params = new URLSearchParams(window.location.search)
@@ -56,6 +57,8 @@ function readStartContext(): {
   if (seed) out.clientSeed = seed
   const sessionId = params.get('sessionId')
   if (sessionId) out.sessionId = sessionId
+  const isPreview = params.get('isPreview')
+  if (isPreview === '1' || isPreview === 'true') out.isPreview = true
   return out
 }
 
