@@ -417,6 +417,7 @@ export default function App() {
           doorsUnlocked={world.doors.filter(d => d.status === 'unlocked').length}
           totalDoors={world.doors.length}
           promptCount={promptCount}
+          durationMs={runDurationMs}
           onRestart={requestRestartFromHost}
         />
       )}

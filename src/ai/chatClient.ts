@@ -1,8 +1,18 @@
 import { ChatLanguage, FinishRunResponse, StartRunResponse } from '../game/puzzles'
 import * as httpClient from './httpClient'
-import * as mockClient from './mockClient'
 
 export type { StreamChatHandlers } from './httpClient'
+
+// In production, the mock client is never used (isMockMode returns false
+// early). The conditional require here lets webpack tree-shake the mock
+// module out of the production bundle, so mock secrets and personas don't
+// ship to end users.
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
+const mockClient: any =
+  process.env.NODE_ENV !== 'production'
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, global-require
+    ? require('./mockClient')
+    : null
 
 function isMockMode(): boolean {
   if (typeof window === 'undefined') return true
@@ -13,7 +23,7 @@ function isMockMode(): boolean {
   return !process.env.REACT_APP_API_BASE
 }
 
-const impl = isMockMode() ? mockClient : httpClient
+const impl = isMockMode() && mockClient ? mockClient : httpClient
 
 export function startRun(): Promise<StartRunResponse> {
   return impl.startRun()
