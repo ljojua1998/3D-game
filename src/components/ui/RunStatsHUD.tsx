@@ -43,7 +43,7 @@ export default function RunStatsHUD({
     ? 'run-stats-hud--finished'
     : expired
       ? 'run-stats-hud--expired'
-      : remaining < 30_000
+      : remaining <= 60_000
         ? 'run-stats-hud--critical'
         : remaining < 120_000
           ? 'run-stats-hud--warning'
