@@ -166,8 +166,8 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    syncGameState({ doors: world.doors, won })
-  }, [world.doors, won])
+    syncGameState({ doors: world.doors, won, lost })
+  }, [world.doors, won, lost])
 
   // Reports the run as finished to the backend + the embedding host.
   // Guards against double-fire (both win-trigger and time-expiry can race).

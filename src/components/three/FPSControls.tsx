@@ -4,6 +4,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { Mesh, Vector3 } from 'three'
 import { DEBUG_POSITION } from '../../config'
 import { playerState } from '../../game/playerState'
+import { gameState } from '../../game/gameState'
 
 const PLAYER_HEIGHT = 1
 const PLAYER_RADIUS = 0.35
@@ -65,8 +66,19 @@ export default function FPSControls(props: FPSControlsProps) {
       if (isInputTarget(event.target)) return
       keyStates[event.code] = false
     }
-    const onMousedown = () => {
+    const onMousedown = (event: MouseEvent) => {
       if (document.pointerLockElement === document.body) return
+      // Don't re-grab pointer lock when game has ended — Win/Lose popup is
+      // showing and the click is meant for its restart button. Without this,
+      // mousedown locks the pointer BEFORE the button click registers, eating
+      // the first click.
+      if (gameState.won || gameState.lost) return
+      // Belt-and-suspenders: if the click target sits inside a popup overlay
+      // (win-screen / lose-screen / chat-dialog), don't lock pointer either.
+      const t = event.target as Element | null
+      if (t && t.closest && t.closest('.win-screen__backdrop, .lose-screen__backdrop, .chat-dialog__backdrop')) {
+        return
+      }
       const req = document.body.requestPointerLock() as unknown as Promise<void> | undefined
       if (req && typeof req.catch === 'function') req.catch(() => {})
     }
