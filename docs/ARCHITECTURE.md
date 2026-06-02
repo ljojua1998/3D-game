@@ -16,8 +16,7 @@ App.tsx
 
 `GameDirector` runs the scripted sequence:
 
-1. **EarlyGame** — the spawn room, the mouse ("algernon"), the whiteboards and
-   cheese. Hand-authored geometry loaded from a `.glb` model.
+1. **EarlyGame** — the spawn room and intro geometry, loaded from a `.glb` model.
 2. **Petals** — 11 pre-built short corridors (`createPetal1`..`createPetal11`).
    They branch off toward the Flower Room. Reaching enough dead ends triggers
    "the world changes around you" and drops you into the open maze.

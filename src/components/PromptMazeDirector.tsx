@@ -1,6 +1,13 @@
 import { MazeGrid } from '../game/MazeGenerator'
+import { Door } from '../game/doors'
 import GeneratedMaze from './maze/GeneratedMaze'
 
-export default function PromptMazeDirector({ grid }: { grid: MazeGrid }) {
-  return <GeneratedMaze grid={grid} />
+type Props = {
+  grid: MazeGrid
+  doors: Door[]
+  nearbyDoorId: string | null
+}
+
+export default function PromptMazeDirector(props: Props) {
+  return <GeneratedMaze {...props} />
 }

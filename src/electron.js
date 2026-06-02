@@ -16,7 +16,7 @@ function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1920,
         height: 1080,
-        icon: `${__dirname}/../public/algernon-bg.png`,
+        icon: `${__dirname}/../public/squad-maze-bg.png`,
     });
     mainWindow.setMenuBarVisibility(false);
 

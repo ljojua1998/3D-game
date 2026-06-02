@@ -1,8 +1,7 @@
 {
-  "name": "algernon",
-  "author": "excalo",
+  "name": "squad-maze",
   "version": "0.0.2",
-  "description": "An infinite maze",
+  "description": "Squad Maze — PromptMaze game widget",
   "private": true,
   "license": "UNLICENSED",
   "main": "src/electron.js",
@@ -76,7 +75,7 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "algernon"
+            "name": "squad-maze"
           }
         },
         {
