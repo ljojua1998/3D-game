@@ -12,8 +12,7 @@ type Props = {
   onRestart: () => void
 }
 
-export default function WinScreen({ elapsedMs, promptCount, rank, totalCompleted, prizes, onRestart }: Props) {
-  const prize = rank != null && Array.isArray(prizes) && prizes[rank - 1] ? prizes[rank - 1] : null
+export default function WinScreen({ elapsedMs, promptCount, onRestart }: Props) {
   useEffect(() => {
     // Win sounds disabled per request — re-enable by uncommenting below.
     // try {
@@ -40,41 +39,11 @@ export default function WinScreen({ elapsedMs, promptCount, rank, totalCompleted
             <span className="win-screen__stat-label">prompts</span>
             <span className="win-screen__stat-value">{promptCount}</span>
           </div>
-          {rank != null && (
-            <div className="win-screen__stat">
-              <span className="win-screen__stat-label">rank</span>
-              <span className="win-screen__stat-value">
-                #{rank}
-                {totalCompleted ? ` / ${totalCompleted}` : ''}
-              </span>
-            </div>
-          )}
         </div>
-        {prize && (
-          <div
-            style={{
-              background: 'rgba(255, 204, 51, 0.12)',
-              border: '1px solid rgba(255, 204, 51, 0.5)',
-              borderRadius: 6,
-              padding: '14px 18px',
-              marginBottom: 18,
-              textAlign: 'center',
-            }}
-          >
-            <div
-              style={{
-                fontSize: 10,
-                letterSpacing: '0.22em',
-                color: 'rgba(255, 204, 51, 0.7)',
-                textTransform: 'uppercase',
-                marginBottom: 4,
-              }}
-            >
-              🏆 პრიზი
-            </div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#fc3' }}>{prize}</div>
-          </div>
-        )}
+        {/* Rank + prize intentionally NOT shown here: the rank at finish time is
+            provisional (a later, faster player can bump this run down), so
+            promising a prize on the win screen could be wrong. Final standings
+            live on the leaderboard. */}
         <button className="win-screen__btn" onClick={onRestart}>
           თამაშის თავიდან დაწყება
         </button>
