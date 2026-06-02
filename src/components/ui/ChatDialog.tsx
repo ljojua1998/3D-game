@@ -18,6 +18,9 @@ type Props = {
   onLanguageChange: (l: ChatLanguage) => void
   onPromptSent: () => void
   onUnlocked: () => void
+  onWrongGuess: () => void
+  wrongCount: number
+  maxWrong: number
   onClose: () => void
 }
 
@@ -32,6 +35,8 @@ const COPY = {
     openInventory: 'ხელსაწყოების არჩევა',
     thinking: (persona: string) => `${persona} ფიქრობს...`,
     wrongGuess: '✗ არასწორი სიტყვა',
+    attempts: (used: number, max: number) => `მცდელობა ${used}/${max}`,
+    lastChance: 'უკანასკნელი ცდა — შემდეგი არასწორი პასუხი თამაშს დაასრულებს',
     error: 'შეცდომა AI-სთან კავშირში',
     unlocked: '✓ კარი გაიხსნა',
   },
@@ -45,6 +50,8 @@ const COPY = {
     openInventory: 'Pick tools',
     thinking: (persona: string) => `${persona} is thinking...`,
     wrongGuess: '✗ Wrong word',
+    attempts: (used: number, max: number) => `Attempt ${used}/${max}`,
+    lastChance: 'Last chance — another wrong answer will end the game',
     error: 'Error contacting the AI',
     unlocked: '✓ Door unlocked',
   },
@@ -58,6 +65,9 @@ export default function ChatDialog({
   onLanguageChange,
   onPromptSent,
   onUnlocked,
+  onWrongGuess,
+  wrongCount,
+  maxWrong,
   onClose,
 }: Props) {
   const c = COPY[language]
@@ -171,6 +181,7 @@ export default function ChatDialog({
         setGuessFeedback('wrong')
         setGuessInput('')
         setTimeout(() => setGuessFeedback(null), 1200)
+        onWrongGuess()
       }
     } catch (err) {
       setError(String(err))
@@ -194,6 +205,7 @@ export default function ChatDialog({
       } else {
         setInventoryFeedback('wrong')
         setTimeout(() => setInventoryFeedback(null), 1400)
+        onWrongGuess()
       }
     } catch (err) {
       setError(String(err))
@@ -274,6 +286,14 @@ export default function ChatDialog({
           )}
           {error && <div className="chat-dialog__error">{c.error}: {error}</div>}
           {unlocked && <div className="chat-dialog__unlocked">{c.unlocked}</div>}
+          {!unlocked && wrongCount > 0 && (
+            <div className={`chat-dialog__attempts${wrongCount === maxWrong - 1 ? ' chat-dialog__attempts--last' : ''}`}>
+              {c.attempts(wrongCount, maxWrong)}
+              {wrongCount === maxWrong - 1 && (
+                <div className="chat-dialog__last-chance">{c.lastChance}</div>
+              )}
+            </div>
+          )}
         </div>
 
         {!inventoryOpen && (

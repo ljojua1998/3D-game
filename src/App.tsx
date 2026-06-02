@@ -35,6 +35,7 @@ import { FOG_COLOR } from './theme'
 const MIN_TURNS = 3
 const PROXIMITY_RADIUS = 2.0
 const END_RADIUS = 1.2
+const MAX_WRONG_ATTEMPTS_PER_DOOR = 3
 
 function generateValidMaze(width: number, height: number, seedOverride?: number | null): MazeGrid {
   // If the backend gave us a persisted seed (resume path), use it directly so
@@ -77,9 +78,11 @@ export default function App() {
   const [openDialogDoorId, setOpenDialogDoorId] = useState<string | null>(null)
   const [won, setWon] = useState(false)
   const [lost, setLost] = useState(false)
+  const [loseReason, setLoseReason] = useState<'time-out' | 'wrong-attempts'>('time-out')
   const [runStartedAt, setRunStartedAt] = useState(() => Date.now())
   const [runEndedAt, setRunEndedAt] = useState<number | null>(null)
   const [promptCount, setPromptCount] = useState(0)
+  const [wrongAttempts, setWrongAttempts] = useState<Record<string, number>>({})
   const [finishResult, setFinishResult] = useState<FinishRunResponse | null>(null)
   const sessionRequestRef = useRef(0)
   const finishedSessionsRef = useRef(new Set<string>())
@@ -147,8 +150,10 @@ export default function App() {
     setNearbyDoorId(null)
     setWon(false)
     setLost(false)
+    setLoseReason('time-out')
     setRunEndedAt(null)
     setPromptCount(0)
+    setWrongAttempts({})
     loadSession()
   }, [loadSession])
 
@@ -309,6 +314,28 @@ export default function App() {
 
   const handlePromptSent = useCallback(() => setPromptCount(p => p + 1), [])
 
+  // Per-door wrong-attempt accounting. Hitting the cap (3 by default)
+  // triggers an immediate loss and routes the player through LoseScreen +
+  // postMessage to the host so a new player can register.
+  const handleWrongGuess = useCallback(
+    (doorId: string) => {
+      setWrongAttempts(prev => {
+        const nextCount = (prev[doorId] ?? 0) + 1
+        if (nextCount >= MAX_WRONG_ATTEMPTS_PER_DOOR && !won && !lost) {
+          const endedAt = Date.now()
+          setLost(true)
+          setLoseReason('wrong-attempts')
+          setRunEndedAt(endedAt)
+          setOpenDialogDoorId(null)
+          if (document.pointerLockElement === document.body) document.exitPointerLock()
+          void reportFinish(false, endedAt)
+        }
+        return { ...prev, [doorId]: nextCount }
+      })
+    },
+    [won, lost, reportFinish],
+  )
+
   const handleDoorUnlocked = useCallback(() => {
     if (!openDialogDoorId) return
     const id = openDialogDoorId
@@ -407,6 +434,9 @@ export default function App() {
           onLanguageChange={allowLanguageToggle ? setLanguage : () => {}}
           onPromptSent={handlePromptSent}
           onUnlocked={handleDoorUnlocked}
+          onWrongGuess={() => handleWrongGuess(openDoor.id)}
+          wrongCount={wrongAttempts[openDoor.id] ?? 0}
+          maxWrong={MAX_WRONG_ATTEMPTS_PER_DOOR}
           onClose={closeDialog}
         />
       )}
@@ -426,6 +456,8 @@ export default function App() {
           totalDoors={world.doors.length}
           promptCount={promptCount}
           durationMs={runDurationMs}
+          reason={loseReason}
+          maxWrong={MAX_WRONG_ATTEMPTS_PER_DOOR}
           onRestart={requestRestartFromHost}
         />
       )}

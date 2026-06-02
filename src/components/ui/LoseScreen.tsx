@@ -3,6 +3,8 @@ type Props = {
   totalDoors: number
   promptCount: number
   durationMs: number
+  reason?: 'time-out' | 'wrong-attempts'
+  maxWrong?: number
   onRestart: () => void
 }
 
@@ -11,14 +13,21 @@ export default function LoseScreen({
   totalDoors,
   promptCount,
   durationMs,
+  reason = 'time-out',
+  maxWrong = 3,
   onRestart,
 }: Props) {
   const totalMinutes = Math.round(durationMs / 60000)
+  const isWrongAttempts = reason === 'wrong-attempts'
+  const title = isWrongAttempts ? 'GAME OVER' : "TIME'S UP"
+  const sub = isWrongAttempts
+    ? `${maxWrong} არასწორი მცდელობა — კარი დაიხურა`
+    : `${totalMinutes} წუთი ამოგეწურა`
   return (
     <div className="lose-screen__backdrop">
       <div className="lose-screen" role="dialog" aria-modal="true">
-        <div className="lose-screen__title">TIME'S UP</div>
-        <div className="lose-screen__sub">{totalMinutes} წუთი ამოგეწურა</div>
+        <div className="lose-screen__title">{title}</div>
+        <div className="lose-screen__sub">{sub}</div>
         <div className="lose-screen__stats">
           <div className="lose-screen__stat">
             <span className="lose-screen__stat-label">კარები</span>
@@ -32,7 +41,7 @@ export default function LoseScreen({
           </div>
         </div>
         <button className="lose-screen__btn" onClick={onRestart}>
-          ხელახლა ცდა
+          ახალი მოთამაშე
         </button>
       </div>
     </div>
