@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { applause, partyHorn } from '../../helpers/sound'
+// Win sounds disabled — re-enable by uncommenting the import below and the play() calls in useEffect.
+// import { applause, partyHorn } from '../../helpers/sound'
 import { formatElapsed } from './RunStatsHUD'
 
 type Props = {
@@ -14,14 +15,15 @@ type Props = {
 export default function WinScreen({ elapsedMs, promptCount, rank, totalCompleted, prizes, onRestart }: Props) {
   const prize = rank != null && Array.isArray(prizes) && prizes[rank - 1] ? prizes[rank - 1] : null
   useEffect(() => {
-    try {
-      const p = applause.play()
-      if (p && typeof p.catch === 'function') p.catch(() => {})
-    } catch {}
-    try {
-      const p = partyHorn.play()
-      if (p && typeof p.catch === 'function') p.catch(() => {})
-    } catch {}
+    // Win sounds disabled per request — re-enable by uncommenting below.
+    // try {
+    //   const p = applause.play()
+    //   if (p && typeof p.catch === 'function') p.catch(() => {})
+    // } catch {}
+    // try {
+    //   const p = partyHorn.play()
+    //   if (p && typeof p.catch === 'function') p.catch(() => {})
+    // } catch {}
   }, [])
 
   return (

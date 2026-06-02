@@ -2,7 +2,6 @@ import { useBox } from '@react-three/cannon'
 import { Fragment, useMemo } from 'react'
 import { Mesh, Texture } from 'three'
 import { CELL_SIZE, WALL_HEIGHT, WALL_THICKNESS } from '../../game/constants'
-import { getStoneTexture } from './wallTexture'
 import { getWindowTexture } from './windowTexture'
 import WallLogo from './WallLogo'
 import Window from './Window'
@@ -39,7 +38,7 @@ type FaceCfg = {
   randomTilt: number
 }
 
-export default function Wall({ position, orientation, tint = '#ffffff', logo }: WallProps) {
+export default function Wall({ position, orientation, tint = '#18b270', logo }: WallProps) {
   const args: [number, number, number] =
     orientation === 'horizontal'
       ? [CELL_SIZE, WALL_THICKNESS, WALL_HEIGHT]
@@ -50,13 +49,6 @@ export default function Wall({ position, orientation, tint = '#ffffff', logo }: 
     args,
     position: center,
   }))
-
-  const texture = useMemo(() => {
-    const t = getStoneTexture().clone()
-    t.repeat.set(CELL_SIZE / 2, WALL_HEIGHT / 2)
-    t.needsUpdate = true
-    return t
-  }, [])
 
   const hasWindow = useMemo(
     () => hashUnit(position[0], position[1], position[2], 0) < WINDOW_CHANCE,
@@ -107,7 +99,7 @@ export default function Wall({ position, orientation, tint = '#ffffff', logo }: 
     <>
       <mesh ref={ref} castShadow receiveShadow>
         <boxGeometry args={args} />
-        <meshStandardMaterial map={texture} color={tint} roughness={0.86} metalness={0.04} />
+        <meshStandardMaterial color={tint} roughness={0.86} metalness={0.04} />
       </mesh>
       {faceConfigs.map((cfg, i) => {
         const facePos: [number, number, number] = [cfg.surfaceX, cfg.surfaceY, faceZ]
