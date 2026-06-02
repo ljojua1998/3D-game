@@ -38,7 +38,7 @@ type FaceCfg = {
   randomTilt: number
 }
 
-export default function Wall({ position, orientation, tint = '#18b270', logo }: WallProps) {
+export default function Wall({ position, orientation, tint = '#c7fd7c', logo }: WallProps) {
   const args: [number, number, number] =
     orientation === 'horizontal'
       ? [CELL_SIZE, WALL_THICKNESS, WALL_HEIGHT]
