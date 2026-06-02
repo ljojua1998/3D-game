@@ -9,6 +9,8 @@ type Props = {
   rotation: [number, number, number]
   tilt: number
   width?: number
+  // Width/height ratio. Defaults to the wide croco logo; pass 1 for square art.
+  aspect?: number
 }
 
 export default function WallLogo({
@@ -17,8 +19,9 @@ export default function WallLogo({
   rotation,
   tilt,
   width = DEFAULT_WIDTH,
+  aspect = LOGO_ASPECT,
 }: Props) {
-  const height = width / LOGO_ASPECT
+  const height = width / aspect
   return (
     <group position={position} rotation={rotation}>
       <mesh rotation={[0, 0, tilt]}>

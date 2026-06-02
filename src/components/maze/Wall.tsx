@@ -11,14 +11,15 @@ export { CELL_SIZE, WALL_HEIGHT, WALL_THICKNESS }
 const LOGO_OFFSET = 0.02
 const WINDOW_OFFSET = 0.025
 const WINDOW_CHANCE = 0.22
-const HORIZONTAL_LOGO_WIDTH = 1.3
 
 type WallProps = {
   position: [number, number, number]
   orientation: 'horizontal' | 'vertical'
   tint?: string
-  logo?: Texture | null
+  wallpapers?: Texture[]
 }
+
+const ART_WIDTH = 1.4
 
 function hashUnit(x: number, y: number, z: number, salt: number): number {
   let h = Math.imul(Math.round(x * 100) | 0, 73856093)
@@ -38,7 +39,7 @@ type FaceCfg = {
   randomTilt: number
 }
 
-export default function Wall({ position, orientation, tint = '#c7fd7c', logo }: WallProps) {
+export default function Wall({ position, orientation, tint = '#c7fd7c', wallpapers = [] }: WallProps) {
   const args: [number, number, number] =
     orientation === 'horizontal'
       ? [CELL_SIZE, WALL_THICKNESS, WALL_HEIGHT]
@@ -109,26 +110,34 @@ export default function Wall({ position, orientation, tint = '#c7fd7c', logo }: 
           windowZ,
         ]
         const logoBelowPos: [number, number, number] = [cfg.surfaceX, cfg.surfaceY, logoBelowZ]
+        // Deterministically pick one tinted wall-art per face so the layout is
+        // stable across re-renders (and matches the persisted maze seed feel).
+        const art = wallpapers.length
+          ? wallpapers[Math.floor(hashUnit(position[0], position[1], position[2], 10 + i) * wallpapers.length) % wallpapers.length]
+          : null
         return (
           <Fragment key={i}>
             {hasWindow && windowTex && (
               <Window texture={windowTex} position={windowPos} rotation={cfg.rotation} />
             )}
-            {logo && hasWindow && (
+            {art && hasWindow && (
               <WallLogo
-                texture={logo}
+                texture={art}
                 position={logoBelowPos}
                 rotation={cfg.rotation}
                 tilt={0}
-                width={HORIZONTAL_LOGO_WIDTH}
+                width={ART_WIDTH * 0.7}
+                aspect={1}
               />
             )}
-            {logo && !hasWindow && (
+            {art && !hasWindow && (
               <WallLogo
-                texture={logo}
+                texture={art}
                 position={facePos}
                 rotation={cfg.rotation}
                 tilt={cfg.randomTilt}
+                width={ART_WIDTH}
+                aspect={1}
               />
             )}
           </Fragment>

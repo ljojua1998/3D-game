@@ -2,6 +2,7 @@ import { Fragment } from 'react'
 import { MazeGrid } from '../../game/MazeGenerator'
 import { Door as DoorData } from '../../game/doors'
 import { useLogoTexture } from './logoTexture'
+import { useWallpaperTextures } from './wallpaperTexture'
 import Wall, { CELL_SIZE } from './Wall'
 import Door from './Door'
 import EndMarker from './EndMarker'
@@ -21,6 +22,7 @@ type Props = {
 
 export default function GeneratedMaze({ grid, doors, nearbyDoorId }: Props) {
   const logo = useLogoTexture()
+  const wallpapers = useWallpaperTextures()
 
   const walls: JSX.Element[] = []
   let k = 0
@@ -35,7 +37,7 @@ export default function GeneratedMaze({ grid, doors, nearbyDoorId }: Props) {
             key={`n-${k++}`}
             position={[wx, wy + CELL_SIZE / 2, 0]}
             orientation="horizontal"
-            logo={logo}
+            wallpapers={wallpapers}
           />,
         )
       if (cell.walls.E)
@@ -44,7 +46,7 @@ export default function GeneratedMaze({ grid, doors, nearbyDoorId }: Props) {
             key={`e-${k++}`}
             position={[wx + CELL_SIZE / 2, wy, 0]}
             orientation="vertical"
-            logo={logo}
+            wallpapers={wallpapers}
           />,
         )
       if (y === 0 && cell.walls.S)
@@ -53,7 +55,7 @@ export default function GeneratedMaze({ grid, doors, nearbyDoorId }: Props) {
             key={`s-${k++}`}
             position={[wx, wy - CELL_SIZE / 2, 0]}
             orientation="horizontal"
-            logo={logo}
+            wallpapers={wallpapers}
           />,
         )
       if (x === 0 && cell.walls.W)
@@ -62,7 +64,7 @@ export default function GeneratedMaze({ grid, doors, nearbyDoorId }: Props) {
             key={`w-${k++}`}
             position={[wx - CELL_SIZE / 2, wy, 0]}
             orientation="vertical"
-            logo={logo}
+            wallpapers={wallpapers}
           />,
         )
     }
