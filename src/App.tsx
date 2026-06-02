@@ -36,6 +36,10 @@ const MIN_TURNS = 3
 const PROXIMITY_RADIUS = 2.0
 const END_RADIUS = 1.2
 const MAX_WRONG_ATTEMPTS_PER_DOOR = 3
+// Cheat/debug hotkeys (G = regenerate maze, Shift+U = unlock all, M = minimap)
+// are enabled only outside the production build, so the booth bundle ships
+// without them.
+const DEV_HOTKEYS = process.env.NODE_ENV !== 'production'
 
 function generateValidMaze(width: number, height: number, seedOverride?: number | null): MazeGrid {
   // If the backend gave us a persisted seed (resume path), use it directly so
@@ -289,11 +293,14 @@ export default function App() {
       if (isInputTarget(e.target)) return
       if (won || lost) return
 
-      if (e.code === 'KeyM') {
+      // Dev-only hotkeys: maze regenerate (G) and unlock-all (Shift+U) are
+      // cheats/debug aids. They're stripped from the production booth build so
+      // a player can't bypass the puzzles or reset the maze mid-run.
+      if (DEV_HOTKEYS && e.code === 'KeyM') {
         setMinimapVisible(v => !v)
-      } else if (e.code === 'KeyG') {
+      } else if (DEV_HOTKEYS && e.code === 'KeyG') {
         regenerate()
-      } else if (e.code === 'KeyU' && e.shiftKey) {
+      } else if (DEV_HOTKEYS && e.code === 'KeyU' && e.shiftKey) {
         devUnlockAll()
       } else if (e.code === 'KeyT') {
         if (openDialogDoorId || !nearbyDoorId) return
