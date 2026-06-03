@@ -1,5 +1,4 @@
 import { Texture } from 'three'
-import { LOGO_ASPECT } from './logoTexture'
 
 const DEFAULT_WIDTH = 1.8
 
@@ -19,7 +18,7 @@ export default function WallLogo({
   rotation,
   tilt,
   width = DEFAULT_WIDTH,
-  aspect = LOGO_ASPECT,
+  aspect = 1,
 }: Props) {
   const height = width / aspect
   return (

@@ -1,5 +1,4 @@
 import { Physics } from '@react-three/cannon'
-import { Stars } from '@react-three/drei'
 import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import PromptMazeDirector from './components/PromptMazeDirector'
@@ -439,11 +438,12 @@ export default function App() {
           camera.rotation.order = 'YZX'
         }}
       >
-        <fog attach="fog" args={[FOG_COLOR, 1, 40]} />
-        <ambientLight intensity={0.25} />
-        <directionalLight intensity={0.25} position={[2000, 2000, 1000]} castShadow />
+        <fog attach="fog" args={[FOG_COLOR, 8, 55]} />
+        {/* Soft, bright pastel lighting — flat and even like the reference. */}
+        <ambientLight intensity={0.85} />
+        <hemisphereLight args={['#ffffff', '#cdb8ec', 0.5]} />
+        <directionalLight intensity={0.5} position={[2000, 2000, 1000]} castShadow />
         <Skydome />
-        <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade />
         <Physics gravity={[0, 0, -25]} defaultContactMaterial={contactMaterial}>
           <PhysicsWorld
             grid={world.grid}

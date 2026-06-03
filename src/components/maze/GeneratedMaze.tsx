@@ -1,12 +1,11 @@
 import { Fragment } from 'react'
 import { MazeGrid } from '../../game/MazeGenerator'
 import { Door as DoorData } from '../../game/doors'
-import { useLogoTexture } from './logoTexture'
 import { useWallpaperTextures } from './wallpaperTexture'
 import Wall, { CELL_SIZE } from './Wall'
 import Door from './Door'
 import EndMarker from './EndMarker'
-import GroundLogos from './GroundLogos'
+import NeonFloor from './NeonFloor'
 
 export const cellToWorld = (x: number, y: number): [number, number, number] => [
   x * CELL_SIZE,
@@ -21,7 +20,6 @@ type Props = {
 }
 
 export default function GeneratedMaze({ grid, doors, nearbyDoorId }: Props) {
-  const logo = useLogoTexture()
   const wallpapers = useWallpaperTextures()
 
   const walls: JSX.Element[] = []
@@ -75,7 +73,7 @@ export default function GeneratedMaze({ grid, doors, nearbyDoorId }: Props) {
   return (
     <Fragment>
       {walls}
-      <GroundLogos grid={grid} texture={logo} />
+      <NeonFloor grid={grid} />
       {doors.map(d => <Door key={d.id} door={d} isNearby={nearbyDoorId === d.id} />)}
       <EndMarker position={endPos} />
     </Fragment>
