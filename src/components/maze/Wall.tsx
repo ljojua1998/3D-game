@@ -1,12 +1,76 @@
 import { useBox } from '@react-three/cannon'
+import { Edges } from '@react-three/drei'
 import { Fragment, useMemo } from 'react'
-import { Mesh, Texture } from 'three'
+import { BoxGeometry, BufferAttribute, BufferGeometry, Color, Mesh, Texture } from 'three'
 import { CELL_SIZE, WALL_HEIGHT, WALL_THICKNESS } from '../../game/constants'
+import { NEON_GREEN, WALL_BOTTOM_COLOR, WALL_TOP_COLOR } from '../../theme'
 import { getWindowTexture } from './windowTexture'
 import WallLogo from './WallLogo'
 import Window from './Window'
 
 export { CELL_SIZE, WALL_HEIGHT, WALL_THICKNESS }
+
+// Build a box whose vertices carry a vertical color gradient (bottom→top).
+// The wall mesh isn't rotated, so the box's local Z is world height.
+function buildGradientBox(args: [number, number, number]): BufferGeometry {
+  const g = new BoxGeometry(args[0], args[1], args[2])
+  const pos = g.attributes.position
+  const top = new Color(WALL_TOP_COLOR)
+  const bottom = new Color(WALL_BOTTOM_COLOR)
+  const tmp = new Color()
+  const colors = new Float32Array(pos.count * 3)
+  const h = args[2]
+  for (let i = 0; i < pos.count; i++) {
+    const t = (pos.getZ(i) + h / 2) / h // 0 at base, 1 at top
+    tmp.copy(bottom).lerp(top, t)
+    colors[i * 3] = tmp.r
+    colors[i * 3 + 1] = tmp.g
+    colors[i * 3 + 2] = tmp.b
+  }
+  g.setAttribute('color', new BufferAttribute(colors, 3))
+  return g
+}
+
+// Two wall shapes (horizontal / vertical) share one gradient geometry each.
+const gradientGeomCache: Record<'horizontal' | 'vertical', BufferGeometry | null> = {
+  horizontal: null,
+  vertical: null,
+}
+function gradientGeom(orientation: 'horizontal' | 'vertical', args: [number, number, number]): BufferGeometry {
+  if (!gradientGeomCache[orientation]) gradientGeomCache[orientation] = buildGradientBox(args)
+  return gradientGeomCache[orientation]!
+}
+
+// Horizontal green "circuit band" loops wrapping the wall at a few heights —
+// the green neon lines that run around every wall.
+function buildBands(args: [number, number, number]): BufferGeometry {
+  const hx = args[0] / 2
+  const hy = args[1] / 2
+  const h = args[2]
+  const pts: number[] = []
+  for (const frac of [0.32, 0.62, 0.86]) {
+    const z = -h / 2 + frac * h
+    const corners: [number, number][] = [
+      [-hx, -hy], [hx, -hy], [hx, hy], [-hx, hy],
+    ]
+    for (let i = 0; i < 4; i++) {
+      const a = corners[i]
+      const b = corners[(i + 1) % 4]
+      pts.push(a[0], a[1], z, b[0], b[1], z)
+    }
+  }
+  const g = new BufferGeometry()
+  g.setAttribute('position', new BufferAttribute(new Float32Array(pts), 3))
+  return g
+}
+const bandsGeomCache: Record<'horizontal' | 'vertical', BufferGeometry | null> = {
+  horizontal: null,
+  vertical: null,
+}
+function bandsGeom(orientation: 'horizontal' | 'vertical', args: [number, number, number]): BufferGeometry {
+  if (!bandsGeomCache[orientation]) bandsGeomCache[orientation] = buildBands(args)
+  return bandsGeomCache[orientation]!
+}
 
 const LOGO_OFFSET = 0.02
 const WINDOW_OFFSET = 0.025
@@ -15,7 +79,6 @@ const WINDOW_CHANCE = 0.22
 type WallProps = {
   position: [number, number, number]
   orientation: 'horizontal' | 'vertical'
-  tint?: string
   wallpapers?: Texture[]
 }
 
@@ -39,7 +102,7 @@ type FaceCfg = {
   randomTilt: number
 }
 
-export default function Wall({ position, orientation, tint = '#c7fd7c', wallpapers = [] }: WallProps) {
+export default function Wall({ position, orientation, wallpapers = [] }: WallProps) {
   const args: [number, number, number] =
     orientation === 'horizontal'
       ? [CELL_SIZE, WALL_THICKNESS, WALL_HEIGHT]
@@ -98,9 +161,13 @@ export default function Wall({ position, orientation, tint = '#c7fd7c', wallpape
 
   return (
     <>
-      <mesh ref={ref} castShadow receiveShadow>
-        <boxGeometry args={args} />
-        <meshStandardMaterial color={tint} roughness={0.86} metalness={0.04} />
+      <mesh ref={ref} geometry={gradientGeom(orientation, args)} castShadow receiveShadow>
+        <meshStandardMaterial vertexColors roughness={0.6} metalness={0.05} />
+        {/* Green neon edge outline + horizontal circuit bands on every wall. */}
+        <Edges threshold={15} color={NEON_GREEN} />
+        <lineSegments geometry={bandsGeom(orientation, args)}>
+          <lineBasicMaterial color={NEON_GREEN} toneMapped={false} transparent opacity={0.9} />
+        </lineSegments>
       </mesh>
       {faceConfigs.map((cfg, i) => {
         const facePos: [number, number, number] = [cfg.surfaceX, cfg.surfaceY, faceZ]

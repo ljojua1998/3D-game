@@ -3,8 +3,20 @@ export const PALETTE = {
   pastelOrange: 0xffb152,
 }
 
-export const WALL_COLOR = 'white'
-export const GROUND_COLOR = 0xff8e63
-export const FOG_COLOR = 'black'
-export const SKY_TOP_COLOR = 0x1f0073 // 0x2d0045
-export const SKY_BOTTOM_COLOR = 0x82a5ff // 0xc97dff // 0x0077ff
+// Vivid neon "tech-maze" theme (reference: isometric synthwave maze).
+export const WALL_COLOR = '#8ea2ff' // fallback wall body (top of gradient)
+
+// Walls fade vertically: vivid periwinkle-blue at the top → hot pink at the
+// base, like the reference render.
+export const WALL_TOP_COLOR = '#8ea2ff' // vivid periwinkle-blue
+export const WALL_BOTTOM_COLOR = '#ff6ec7' // hot pink
+
+export const GROUND_COLOR = '#eae4fb' // soft lilac-white floor
+export const FOG_COLOR = '#c3b6f0' // lilac haze
+export const SKY_TOP_COLOR = 0xb7a3f5 // saturated lilac up high
+export const SKY_BOTTOM_COLOR = 0xffb3e6 // hot-pink horizon
+
+// Neon accent colors used for edge glow + floor path traces.
+export const NEON_PINK = '#ff2fd0'
+export const NEON_YELLOW = '#ffd11a'
+export const NEON_GREEN = '#5dff7a' // wall circuit lines
