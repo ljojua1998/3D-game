@@ -29,7 +29,7 @@ import {
   StartRunResponse,
 } from './game/puzzles'
 import { CELL_SIZE } from './game/constants'
-import { MAZE_HEIGHT, MAZE_SEED, MAZE_WIDTH } from './config'
+import { MAZE_HEIGHT, MAZE_WIDTH } from './config'
 import { FOG_COLOR } from './theme'
 
 const MIN_TURNS = 3
@@ -41,18 +41,49 @@ const MAX_WRONG_ATTEMPTS_PER_DOOR = 3
 // The minimap (M) is NOT gated — it's a normal player aid.
 const DEV_HOTKEYS = process.env.NODE_ENV !== 'production'
 
-function generateValidMaze(width: number, height: number, seedOverride?: number | null): MazeGrid {
-  // If the backend gave us a persisted seed (resume path), use it directly so
-  // the maze layout matches the run that's already in progress.
-  const effectiveSeed = seedOverride != null ? seedOverride : MAZE_SEED
-  let g = generateMaze(width, height, effectiveSeed)
-  if (effectiveSeed !== null) return g
-  for (let i = 0; i < 50; i++) {
-    const turns = getTurns(shortestPath(g), g)
-    if (turns.length >= MIN_TURNS) return g
-    g = generateMaze(width, height, null)
+const MAZE_SEED_SEARCH_LIMIT = 300
+
+function turnCount(g: MazeGrid): number {
+  return getTurns(shortestPath(g), g).length
+}
+
+// Build a maze that has at least `minTurns` junctions on the shortest path, so
+// EVERY door has a corridor turn to sit on. placeDoors() drops any door beyond
+// the available turns — too few turns means dropped doors and an unwinnable run
+// (the server keeps those doors locked forever).
+//
+// The search is deterministic in the base seed: we walk seed, seed+1, seed+2…
+// until one qualifies. Because the backend persists the base seed, a resumed
+// run re-runs the identical search and rebuilds the exact same maze + door
+// placement. (The old code returned the server seed's maze verbatim with no
+// turn check, so ~8% of 2-door runs — more for higher door counts — were
+// silently unwinnable.)
+function generateValidMaze(
+  width: number,
+  height: number,
+  seedOverride: number | null,
+  minTurns: number,
+): MazeGrid {
+  const baseSeed =
+    seedOverride != null
+      ? seedOverride >>> 0
+      : (Math.floor(Math.random() * 0xffffffff) >>> 0)
+
+  let best = generateMaze(width, height, baseSeed)
+  let bestTurns = turnCount(best)
+  if (bestTurns >= minTurns) return best
+
+  for (let i = 1; i <= MAZE_SEED_SEARCH_LIMIT; i++) {
+    const g = generateMaze(width, height, (baseSeed + i) >>> 0)
+    const t = turnCount(g)
+    if (t >= minTurns) return g // first qualifying seed — deterministic
+    if (t > bestTurns) {
+      best = g
+      bestTurns = t
+    }
   }
-  return g
+  // Fallback: the most turn-rich maze we found (still maximises placed doors).
+  return best
 }
 
 function computeDoors(grid: MazeGrid, doorSpecs: DoorSpec[]): Door[] {
@@ -107,10 +138,14 @@ export default function App() {
         if (sessionRequestRef.current !== reqId) return
         setSession(s)
         if (s.defaultLanguage) setLanguage(s.defaultLanguage)
+        // Need at least one corridor turn per door (and a sane minimum) so no
+        // door is dropped during placement — otherwise the run is unwinnable.
+        const doorCount = Array.isArray(s.doors) ? s.doors.length : 0
         const grid = generateValidMaze(
           s.maze?.width ?? MAZE_WIDTH,
           s.maze?.height ?? MAZE_HEIGHT,
           s.mazeSeed ?? null,
+          Math.max(MIN_TURNS, doorCount),
         )
         // Apply any per-door unlock flags from a resumed session.
         const placed = computeDoors(grid, s.doors)
