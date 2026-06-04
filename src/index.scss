@@ -426,6 +426,24 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
+
+    // Custom neon scrollbar matching the maze theme.
+    scrollbar-width: thin;
+    scrollbar-color: rgba(93, 255, 122, 0.4) transparent;
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    &::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(93, 255, 122, 0.4); // neon green
+      border-radius: 8px;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: rgba(93, 255, 122, 0.7);
+    }
   }
 
   &__msg {
