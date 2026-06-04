@@ -106,3 +106,23 @@ src/
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the maze system works
 and which knobs to turn to make it longer, bigger, or add new rooms.
+
+## Current build (booth)
+
+- **Visual**: pastel/neon "tech-maze" — vertical blue→pink gradient walls with
+  green PCB circuit traces + neon edge glow, light floor with yellow corridor
+  center-lines + circuit field + pink wall-foot lines, tinted decorative
+  wallpapers on walls. Custom neon scrollbar in the AI chat.
+- **Doors**: secret-word (guess input always visible) or tools (pick the right
+  logos). 3 wrong guesses → lose. Win/lose screens hand control back to the host
+  for the next player; WinScreen hides rank/prize (provisional at finish).
+- **Maze**: deterministic seed search guarantees enough corridor turns for every
+  door (no unwinnable layouts); identical maze on resume.
+- **Dev hotkeys** (G regenerate, Shift+U unlock-all) are stripped from the
+  production bundle; M (minimap) stays. Win sounds disabled.
+- **Host bridge**: postMessage lifecycle events (`ready`, `run-started`,
+  `run-finished`, `resume-failed`, `user-requested-restart`); APIs reached via
+  `apiBase`/`gameId`/`sessionId` URL params.
+
+Build (`npm run build`) → copy `build/*` into the host app's
+`public/play-widget/`.
