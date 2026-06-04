@@ -81,7 +81,6 @@ export default function ChatDialog({
   const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [guessInput, setGuessInput] = useState('')
-  const [guessOpen, setGuessOpen] = useState(false)
   const [guessFeedback, setGuessFeedback] = useState<'wrong' | null>(null)
   const [inventoryOpen, setInventoryOpen] = useState(false)
   const [inventoryFeedback, setInventoryFeedback] = useState<'wrong' | null>(null)
@@ -308,7 +307,7 @@ export default function ChatDialog({
               rows={2}
               disabled={streaming || unlocked}
             />
-            {door.type === 'secret-word' && guessOpen && (
+            {door.type === 'secret-word' && (
               <div className="chat-dialog__guess-row">
                 <label className="chat-dialog__guess-label">{c.guessLabel}</label>
                 <input
@@ -318,7 +317,6 @@ export default function ChatDialog({
                   onKeyDown={onGuessKey}
                   placeholder={c.guessPlaceholder}
                   disabled={submitting || unlocked}
-                  autoFocus
                 />
                 <button
                   className="chat-dialog__btn-primary"
@@ -334,16 +332,6 @@ export default function ChatDialog({
               </div>
             )}
             <div className="chat-dialog__footer">
-              {door.type === 'secret-word' && (
-                <button
-                  className="chat-dialog__btn-secondary"
-                  onClick={() => setGuessOpen(v => !v)}
-                  type="button"
-                  disabled={unlocked}
-                >
-                  {c.guessLabel}
-                </button>
-              )}
               {door.type === 'tools' && (
                 <button
                   className="chat-dialog__btn-secondary"
