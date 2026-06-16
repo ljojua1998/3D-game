@@ -1,3 +1,5 @@
+import { DEMO } from '../../config'
+
 type DoorStatus = 'locked'
 
 type Props = {
@@ -9,7 +11,9 @@ export default function ProximityPrompt({ status }: Props) {
     return (
       <div className="proximity-prompt">
         <kbd className="proximity-prompt__key">T</kbd>
-        <span className="proximity-prompt__label">AI-სთან საუბარი / Talk to AI</span>
+        <span className="proximity-prompt__label">
+          {DEMO ? 'კარის გაღება / Open door' : 'AI-სთან საუბარი / Talk to AI'}
+        </span>
       </div>
     )
   }

@@ -28,7 +28,8 @@ import {
   StartRunResponse,
 } from './game/puzzles'
 import { CELL_SIZE } from './game/constants'
-import { MAZE_HEIGHT, MAZE_WIDTH } from './config'
+import { MAZE_HEIGHT, MAZE_WIDTH, DEMO } from './config'
+import { buildDemoSession } from './game/demo'
 import { FOG_COLOR } from './theme'
 
 const MIN_TURNS = 3
@@ -132,6 +133,25 @@ export default function App() {
     setSession(null)
     setSessionError(null)
     setFinishResult(null)
+
+    // DEMO build: no backend. Build the run locally and a fresh random maze
+    // each time (no persisted seed), then place the demo doors.
+    if (DEMO) {
+      const s = buildDemoSession()
+      setSession(s)
+      const doorCount = s.doors.length
+      const grid = generateValidMaze(
+        s.maze?.width ?? MAZE_WIDTH,
+        s.maze?.height ?? MAZE_HEIGHT,
+        null,
+        Math.max(MIN_TURNS, doorCount),
+      )
+      const doors = computeDoors(grid, s.doors)
+      setWorld({ grid, doors })
+      setRunStartedAt(Date.now())
+      return
+    }
+
     startRun()
       .then(s => {
         if (sessionRequestRef.current !== reqId) return
@@ -217,6 +237,8 @@ export default function App() {
   const reportFinish = useCallback(
     async (completed: boolean, endedAt: number) => {
       if (!session) return
+      // DEMO: nothing to report to — no backend, no embedding host.
+      if (DEMO) return
       if (finishedSessionsRef.current.has(session.sessionId)) return
       finishedSessionsRef.current.add(session.sessionId)
 
@@ -252,6 +274,7 @@ export default function App() {
   )
 
   useEffect(() => {
+    if (DEMO) return // demo never times out
     if (won || lost) return
     if (!world.grid) return
     const id = setInterval(() => {
@@ -342,6 +365,15 @@ export default function App() {
         const d = world.doors.find(x => x.id === nearbyDoorId)
         if (!d || d.status !== 'locked') return
         e.preventDefault()
+        // DEMO: no riddle / chat — "T" unlocks the nearby door instantly.
+        if (DEMO) {
+          const id = nearbyDoorId
+          setWorld(w => ({
+            ...w,
+            doors: w.doors.map(x => (x.id === id ? { ...x, status: 'unlocked' } : x)),
+          }))
+          return
+        }
         if (document.pointerLockElement === document.body) document.exitPointerLock()
         setOpenDialogDoorId(nearbyDoorId)
       }
@@ -490,7 +522,7 @@ export default function App() {
           rank={finishResult?.rank ?? null}
           totalCompleted={finishResult?.totalCompleted}
           prizes={session?.prizes}
-          onRestart={requestRestartFromHost}
+          onRestart={DEMO ? regenerate : requestRestartFromHost}
         />
       )}
       {lost && (
@@ -501,7 +533,7 @@ export default function App() {
           durationMs={runDurationMs}
           reason={loseReason}
           maxWrong={MAX_WRONG_ATTEMPTS_PER_DOOR}
-          onRestart={requestRestartFromHost}
+          onRestart={DEMO ? regenerate : requestRestartFromHost}
         />
       )}
     </>
