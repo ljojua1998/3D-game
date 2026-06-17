@@ -29,6 +29,10 @@ export type StartRunResponse = {
     type: DoorType
     displayConfig: DoorDisplayConfig
     unlocked?: boolean
+    // 🐞 DEBUG_ANSWER (test only) — server sends the per-run randomized answer
+    // so testers can verify what was rolled. Comment out the server side before
+    // prod; this field is simply absent when not sent.
+    _debugAnswer?: { secret: LocalizedText | null; tools: string[] | null }
   }>
   inventoryItems: InventoryItem[]
   // Backend-driven settings (optional for backward compat with old mock-mode runs)

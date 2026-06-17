@@ -88,10 +88,18 @@ export default function ChatDialog({
   const [submitting, setSubmitting] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const listRef = useRef<HTMLDivElement | null>(null)
+  // Tracks the in-flight chat stream so we can cancel it when the dialog is
+  // closed/unmounted mid-reply. Without this the fetch keeps running on the
+  // server (dangling request, extra prompt bump) and a quick close→reopen→send
+  // would leave two concurrent /chat requests racing on the same session.
+  const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     textareaRef.current?.focus()
   }, [])
+
+  // Abort any in-flight stream on unmount (dialog close, door change, win/lose).
+  useEffect(() => () => abortRef.current?.abort(), [])
 
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight
@@ -118,9 +126,13 @@ export default function ChatDialog({
     ])
     setStreaming(true)
     onPromptSent()
+    // Cancel any prior in-flight stream before starting a new one.
+    abortRef.current?.abort()
+    const ac = new AbortController()
+    abortRef.current = ac
     try {
       await streamChat(
-        { sessionId, doorId: door.id, language, message: text },
+        { sessionId, doorId: door.id, language, message: text, signal: ac.signal },
         {
           onChunk: chunk => {
             setMessages(prev => {
@@ -158,6 +170,8 @@ export default function ChatDialog({
         },
       )
     } catch (err) {
+      // An intentional cancel (dialog closed mid-stream) is not an error.
+      if ((err as { name?: string })?.name === 'AbortError') return
       setError(String(err))
       setStreaming(false)
     }
@@ -265,6 +279,38 @@ export default function ChatDialog({
             ×
           </button>
         </div>
+
+        {/* 🐞 DEBUG_ANSWER (test only) — shows the per-run randomized answer for
+            this door so testers can verify what was rolled. COMMENT OUT the
+            block below (and the server _debugAnswer) before going to prod. */}
+        {door._debugAnswer && (
+          <div
+            style={{
+              padding: '6px 12px',
+              background: '#3a1d1d',
+              color: '#ffb4b4',
+              fontSize: 12,
+              fontFamily: 'monospace',
+              borderBottom: '1px solid #5a2a2a',
+              wordBreak: 'break-word',
+            }}
+          >
+            🐞 {door.type === 'secret-word'
+              ? `secret: ${
+                  door._debugAnswer.secret
+                    ? `ka="${door._debugAnswer.secret.ka}" · en="${door._debugAnswer.secret.en}"`
+                    : '—'
+                }`
+              : `tools: ${
+                  (door._debugAnswer.tools ?? [])
+                    .map(id => {
+                      const it = inventoryItems.find(i => i.id === id)
+                      return it ? `${it.icon} ${it.label[language]}` : id
+                    })
+                    .join(', ') || '—'
+                }`}
+          </div>
+        )}
 
         <div className="chat-dialog__messages" ref={listRef}>
           {messages.map((m, i) => (

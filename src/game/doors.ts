@@ -3,7 +3,7 @@ import { Coord } from './pathfinding'
 import { Turn } from './pathAnalysis'
 import { RNG } from './rng'
 import { CELL_SIZE } from './constants'
-import { DoorDisplayConfig, DoorSpec, DoorType } from './puzzles'
+import { DoorDisplayConfig, DoorSpec, DoorType, LocalizedText } from './puzzles'
 
 export type DoorStatus = 'locked' | 'unlocked'
 
@@ -16,6 +16,8 @@ export type Door = {
   status: DoorStatus
   type: DoorType
   displayConfig: DoorDisplayConfig
+  // 🐞 DEBUG_ANSWER (test only) — carried from the run/start response.
+  _debugAnswer?: { secret: LocalizedText | null; tools: string[] | null }
 }
 
 const DIR_DX: Record<Dir, number> = { N: 0, S: 0, E: 1, W: -1 }
@@ -62,6 +64,8 @@ export function placeDoors(
       status: 'locked',
       type: spec.type,
       displayConfig: spec.displayConfig,
+      // 🐞 DEBUG_ANSWER (test only) — carry the rolled answer to the chat header.
+      _debugAnswer: spec._debugAnswer,
     }
   })
 }
