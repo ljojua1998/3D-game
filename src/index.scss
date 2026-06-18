@@ -335,6 +335,10 @@ body {
   max-height: min(82vh, 720px);
   display: flex;
   flex-direction: column;
+  // Inner regions (messages list, inventory grid) own the scrolling — clip here
+  // so the footer / send button can never spill below the dialog on short
+  // laptops when the tool picker is open.
+  overflow: hidden;
   background: #14171f;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 10px;
@@ -421,7 +425,9 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 4px;
     margin-bottom: 10px;
-    min-height: 180px;
+    // Allow the list to shrink when the tool picker is open / on short screens
+    // (it scrolls internally) so the picker + send button stay on screen.
+    min-height: 0;
     max-height: 380px;
     display: flex;
     flex-direction: column;
@@ -686,6 +692,10 @@ body {
   background: rgba(0, 0, 0, 0.22);
   border: 1px solid rgba(255, 204, 51, 0.3);
   border-radius: 6px;
+  // Column so the grid can scroll while the footer stays pinned at the bottom.
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 
   &__title {
     font-size: 12px;
@@ -708,6 +718,12 @@ body {
     grid-template-columns: repeat(4, 1fr);
     gap: 8px;
     margin-bottom: 12px;
+    // Scroll the items internally when they don't fit (short screens) so the
+    // footer / send button is always reachable.
+    min-height: 0;
+    max-height: 46vh;
+    overflow-y: auto;
+    padding-right: 2px;
 
     @media (max-width: 540px) {
       grid-template-columns: repeat(2, 1fr);
@@ -760,6 +776,9 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
+    // Never let the action row (incl. send) shrink or clip.
+    flex-shrink: 0;
+    margin-top: 4px;
   }
 
   &__feedback {
@@ -1060,6 +1079,45 @@ body {
     &:hover {
       background: #88ffae;
     }
+  }
+}
+
+// --- Chat dialog responsiveness when the tool picker is open ---
+// When the inventory panel is mounted, compact the message list so the
+// title + scrollable grid + footer all fit; the grid scrolls if still too tall.
+.chat-dialog:has(.inventory-panel) .chat-dialog__messages {
+  max-height: 26vh;
+}
+
+// Short laptops (wide but low height): use more of the screen and tighten the
+// tool picker so the send button is always visible without scrolling the page.
+@media (max-height: 640px) {
+  .chat-dialog {
+    max-height: 94vh;
+  }
+  .chat-dialog__messages {
+    max-height: 30vh;
+  }
+  .chat-dialog:has(.inventory-panel) .chat-dialog__messages {
+    max-height: 18vh;
+  }
+  .inventory-panel {
+    padding: 8px 10px;
+  }
+  .inventory-panel__hint {
+    margin-bottom: 6px;
+    font-size: 12px;
+  }
+  .inventory-panel__grid {
+    max-height: 40vh;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .inventory-panel__item {
+    padding: 6px 4px;
+  }
+  .inventory-panel__icon {
+    font-size: 18px;
   }
 }
 
