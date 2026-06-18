@@ -130,6 +130,15 @@ export default function ChatDialog({
     abortRef.current?.abort()
     const ac = new AbortController()
     abortRef.current = ac
+    // Watchdog: never let a non-responding server hang the UI forever. The
+    // server's maxDuration is 30s, so 45s is a safe outer bound. `timedOut`
+    // lets the catch tell a genuine timeout apart from an intentional abort
+    // (dialog close / superseding send), which must stay silent.
+    let timedOut = false
+    const watchdog = setTimeout(() => {
+      timedOut = true
+      ac.abort()
+    }, 45000)
     try {
       await streamChat(
         { sessionId, doorId: door.id, language, message: text, signal: ac.signal },
@@ -170,10 +179,23 @@ export default function ChatDialog({
         },
       )
     } catch (err) {
-      // An intentional cancel (dialog closed mid-stream) is not an error.
-      if ((err as { name?: string })?.name === 'AbortError') return
-      setError(String(err))
-      setStreaming(false)
+      // An intentional cancel (dialog closed / superseded by a newer send) is
+      // not an error — but a watchdog timeout reuses AbortError, so surface it.
+      if ((err as { name?: string })?.name === 'AbortError' && !timedOut) return
+      setError(timedOut ? 'timeout' : String(err))
+      // Drop the empty placeholder bubble we pushed for the (failed) reply.
+      setMessages(prev => {
+        const next = prev.slice()
+        const last = next[next.length - 1]
+        if (last && last.role === 'assistant' && last.streaming) next.pop()
+        return next
+      })
+    } finally {
+      clearTimeout(watchdog)
+      // Safety net for a stream that closed without a done/error event: only
+      // the active request resets `streaming` (a newer send already owns
+      // abortRef, and aborting this one must not re-enable input under it).
+      if (abortRef.current === ac) setStreaming(false)
     }
   }
 
@@ -319,8 +341,22 @@ export default function ChatDialog({
               className={`chat-dialog__msg chat-dialog__msg--${m.role}`}
             >
               <span className="chat-dialog__msg-bubble">
-                {m.text}
-                {m.streaming && <span className="chat-dialog__cursor">▍</span>}
+                {m.streaming && m.text === '' ? (
+                  <span
+                    className="chat-dialog__typing"
+                    role="status"
+                    aria-label={c.thinking(door.displayConfig.persona[language])}
+                  >
+                    <span className="chat-dialog__typing-dot" />
+                    <span className="chat-dialog__typing-dot" />
+                    <span className="chat-dialog__typing-dot" />
+                  </span>
+                ) : (
+                  <>
+                    {m.text}
+                    {m.streaming && <span className="chat-dialog__cursor">▍</span>}
+                  </>
+                )}
               </span>
             </div>
           ))}
