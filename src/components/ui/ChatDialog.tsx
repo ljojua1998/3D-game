@@ -204,7 +204,7 @@ export default function ChatDialog({
     if (!guess || submitting || unlocked) return
     setSubmitting(true)
     setGuessFeedback(null)
-    onPromptSent()
+    // Door guesses are not "prompts" — only AI questions (send) count.
     try {
       const res = await submitDoor({ sessionId, doorId: door.id, guess })
       if (res.ok) {
@@ -229,7 +229,7 @@ export default function ChatDialog({
     if (submitting || unlocked) return
     setSubmitting(true)
     setInventoryFeedback(null)
-    onPromptSent()
+    // Tool picks are not "prompts" — only AI questions (send) count.
     try {
       const res = await submitDoor({ sessionId, doorId: door.id, tools: toolIds })
       if (res.ok) {
