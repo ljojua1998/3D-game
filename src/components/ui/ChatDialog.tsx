@@ -302,38 +302,6 @@ export default function ChatDialog({
           </button>
         </div>
 
-        {/* 🐞 DEBUG_ANSWER (test only) — shows the per-run randomized answer for
-            this door so testers can verify what was rolled. COMMENT OUT the
-            block below (and the server _debugAnswer) before going to prod. */}
-        {door._debugAnswer && (
-          <div
-            style={{
-              padding: '6px 12px',
-              background: '#3a1d1d',
-              color: '#ffb4b4',
-              fontSize: 12,
-              fontFamily: 'monospace',
-              borderBottom: '1px solid #5a2a2a',
-              wordBreak: 'break-word',
-            }}
-          >
-            🐞 {door.type === 'secret-word'
-              ? `secret: ${
-                  door._debugAnswer.secret
-                    ? `ka="${door._debugAnswer.secret.ka}" · en="${door._debugAnswer.secret.en}"`
-                    : '—'
-                }`
-              : `tools: ${
-                  (door._debugAnswer.tools ?? [])
-                    .map(id => {
-                      const it = inventoryItems.find(i => i.id === id)
-                      return it ? `${it.icon} ${it.label[language]}` : id
-                    })
-                    .join(', ') || '—'
-                }`}
-          </div>
-        )}
-
         <div className="chat-dialog__messages" ref={listRef}>
           {messages.map((m, i) => (
             <div
